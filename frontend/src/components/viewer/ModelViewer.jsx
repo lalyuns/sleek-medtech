@@ -1,4 +1,17 @@
-import { Suspense, useState, useMemo } from 'react'
+import { Suspense, useState, useMemo, Component } from 'react'
+
+class ViewerErrorBoundary extends Component {
+  state = { error: false }
+  static getDerivedStateFromError() { return { error: true } }
+  render() {
+    if (this.state.error) return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#64748b', fontSize: 13 }}>
+        無法載入 3D 模型
+      </div>
+    )
+    return this.props.children
+  }
+}
 import { Canvas, useLoader } from '@react-three/fiber'
 import { OrbitControls, Html, Grid, Center } from '@react-three/drei'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js'
@@ -79,6 +92,7 @@ function PendingAnnotation() {
 
 export default function ModelViewer({ fileUrl }) {
   return (
+    <ViewerErrorBoundary>
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <Canvas
         camera={{ position: [5, 5, 5], fov: 50 }}
@@ -99,5 +113,6 @@ export default function ModelViewer({ fileUrl }) {
       <ClipControls />
       <AnnotationPanel />
     </div>
+    </ViewerErrorBoundary>
   )
 }
