@@ -94,6 +94,8 @@ npm run dev
 
 在專案詳情頁左側「版本歷史」點「+」，填入 Material ID 與描述，點「建立版本」。
 
+![alt text](image.png)
+
 ### 3D 檢視與標註
 
 | 操作 | 方式 |
@@ -116,6 +118,8 @@ npm run dev
 ### 查看溯源圖
 
 點右上角「溯源圖」，可切換版本、縮放拖拉節點（藍=draft，綠=locked）。
+
+![alt text](image-1.png)
 
 ### 匯出稽核日誌（管理員）
 
