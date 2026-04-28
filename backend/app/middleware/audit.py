@@ -39,8 +39,8 @@ def _extract_user_id(request: Request) -> Optional[int]:
         return None
     token = auth[7:]
     try:
-        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
-        return int(payload.get("sub"))
+        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        return int(payload.get("user_id"))
     except (JWTError, TypeError, ValueError):
         return None
 
