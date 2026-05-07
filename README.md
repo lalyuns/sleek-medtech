@@ -24,19 +24,17 @@ cd C:\Users\User\sleek-medtech
 copy .env.example .env
 ```
 
-先啟動基礎服務：
+## 啟動方式
 
-```powershell
-docker compose up -d db redis minio
-```
+### 方式 A：完整容器模式
 
-如果只想看成果，不想分開開前後端，可用完整容器模式：
+適合同學第一次打開專案、展示成果，或不想分別啟動前後端時使用：
 
 ```powershell
 docker compose up -d --build
 ```
 
-完整容器模式啟動後開：
+啟動後開啟：
 
 | 項目 | URL |
 | --- | --- |
@@ -44,7 +42,11 @@ docker compose up -d --build
 | API 文件 | http://localhost:8000/docs |
 | MinIO Console | http://localhost:9001 |
 
-若要用本機開發模式，照下面「快速啟動」分別開 backend、worker、frontend。第一次建 Python venv 可執行：
+### 方式 B：本機開發模式
+
+適合需要改程式、看後端 log、跑測試時使用。
+
+第一次建立 Python venv：
 
 ```powershell
 cd C:\Users\User\sleek-medtech\backend
@@ -54,16 +56,7 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-常見問題：
-
-- `docker compose` 連不上：先確認 Docker Desktop 已開啟，且左下角顯示 Engine running。
-- `localhost:3307` 連不上：通常是 MySQL 容器還沒 ready，等 10 到 30 秒後重跑 `alembic upgrade head`。
-- PowerShell 找不到 `python`：改用 `py -3.11`，或重新安裝 Python 並勾選 Add python.exe to PATH。
-- 前端 `npm install` 失敗：確認 Node.js 已安裝，並在 `frontend/` 目錄執行。
-
-## 快速啟動
-
-啟動資料庫、Redis 與 MinIO：
+啟動 MySQL、Redis 與 MinIO：
 
 ```powershell
 cd C:\Users\User\sleek-medtech
@@ -89,7 +82,7 @@ cd C:\Users\User\sleek-medtech\backend
 rq worker --url redis://localhost:6379/0
 ```
 
-啟動前端：
+另開一個終端啟動前端：
 
 ```powershell
 cd C:\Users\User\sleek-medtech\frontend
@@ -97,13 +90,14 @@ npm install
 npm run dev
 ```
 
-## 開啟位置
+本機開發模式的開啟位置與完整容器模式相同。
 
-| 項目 | URL |
-| --- | --- |
-| 前端 | http://localhost:5173 |
-| API 文件 | http://localhost:8000/docs |
-| MinIO Console | http://localhost:9001 |
+常見問題：
+
+- `docker compose` 連不上：先確認 Docker Desktop 已開啟，且左下角顯示 Engine running。
+- `localhost:3307` 連不上：通常是 MySQL 容器還沒 ready，等 10 到 30 秒後重跑 `alembic upgrade head`。
+- PowerShell 找不到 `python`：改用 `py -3.11`，或重新安裝 Python 並勾選 Add python.exe to PATH。
+- 前端 `npm install` 失敗：確認 Node.js 已安裝，並在 `frontend/` 目錄執行。
 
 ## Demo 帳號
 
