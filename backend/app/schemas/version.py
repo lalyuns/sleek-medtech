@@ -3,12 +3,9 @@ from typing import Optional
 from pydantic import BaseModel
 
 
-class VersionCreate(BaseModel):
-    material_id: int
-    description: Optional[str] = None
-    file_url: str
-    hash_value: str
-    total_chunks: Optional[int] = None
+class VersionLockRequest(BaseModel):
+    reason: str
+    password: str
 
 
 class VersionOut(BaseModel):
@@ -23,5 +20,9 @@ class VersionOut(BaseModel):
     hash_value: str
     status: str
     timestamp: datetime
+    signed_off_by: Optional[int] = None
+    signed_off_at: Optional[datetime] = None
+    signoff_reason: Optional[str] = None
+    signoff_user_snapshot: Optional[dict] = None
 
     model_config = {"from_attributes": True}

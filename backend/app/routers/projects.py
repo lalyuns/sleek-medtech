@@ -6,27 +6,52 @@ from app.database import get_db
 from app.dependencies.auth import get_current_user
 from app.dependencies.rbac import require_project_access
 from app.models.project import Project, ProjectStatus
+from app.models.audit_log import AuditLog
 from app.models.user import User, UserRole
 from app.models.user_project_mapping import UserProjectMapping, AccessLevel
 from app.schemas.project import ProjectCreate, ProjectOut
+from app.schemas.user import ProjectMemberOut
 
 router = APIRouter(prefix="/api/v1/projects", tags=["projects"])
+
+
+def _access_level_for(project_id: int, current_user: User, db: Session) -> str | None:
+    if current_user.role == UserRole.admin:
+        return AccessLevel.admin.value
+    mapping = db.query(UserProjectMapping).filter(
+        UserProjectMapping.project_id == project_id,
+        UserProjectMapping.user_id == current_user.user_id,
+    ).first()
+    return mapping.access_level.value if mapping else None
+
+
+def _project_out(project: Project, current_user: User, db: Session) -> ProjectOut:
+    return ProjectOut(
+        project_id=project.project_id,
+        name=project.name,
+        description=project.description,
+        status=project.status.value,
+        owner_id=project.owner_id,
+        current_access_level=_access_level_for(project.project_id, current_user, db),
+    )
 
 
 @router.get("/", response_model=List[ProjectOut])
 def list_projects(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if current_user.role == UserRole.admin:
-        return db.query(Project).filter(Project.is_deleted == False).all()
+        projects = db.query(Project).filter(Project.is_deleted == False).all()
+        return [_project_out(project, current_user, db) for project in projects]
     accessible_ids = (
         db.query(UserProjectMapping.project_id)
         .filter(UserProjectMapping.user_id == current_user.user_id)
         .subquery()
     )
-    return (
+    projects = (
         db.query(Project)
         .filter(Project.project_id.in_(accessible_ids), Project.is_deleted == False)
         .all()
     )
+    return [_project_out(project, current_user, db) for project in projects]
 
 
 @router.post("/", response_model=ProjectOut, status_code=status.HTTP_201_CREATED)
@@ -42,7 +67,7 @@ def create_project(body: ProjectCreate, db: Session = Depends(get_db), current_u
     db.add(mapping)
     db.commit()
     db.refresh(project)
-    return project
+    return _project_out(project, current_user, db)
 
 
 @router.get("/{project_id}", response_model=ProjectOut)
@@ -54,7 +79,7 @@ def get_project(
     project = db.query(Project).filter(Project.project_id == project_id, Project.is_deleted == False).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    return project
+    return _project_out(project, _, db)
 
 
 @router.post("/{project_id}/members", status_code=status.HTTP_204_NO_CONTENT)
@@ -73,4 +98,58 @@ def add_member(
         existing.access_level = access_level
     else:
         db.add(UserProjectMapping(user_id=user_id, project_id=project_id, access_level=access_level))
+    db.commit()
+
+
+@router.get("/{project_id}/members", response_model=List[ProjectMemberOut])
+def list_members(
+    project_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_project_access(AccessLevel.admin)),
+):
+    rows = (
+        db.query(UserProjectMapping, User)
+        .join(User, User.user_id == UserProjectMapping.user_id)
+        .filter(
+            UserProjectMapping.project_id == project_id,
+            User.is_deleted == False,
+        )
+        .order_by(UserProjectMapping.mapping_id)
+        .all()
+    )
+    return [
+        ProjectMemberOut(
+            mapping_id=mapping.mapping_id,
+            user_id=user.user_id,
+            project_id=mapping.project_id,
+            access_level=mapping.access_level.value,
+            name=user.name,
+            email=user.email,
+            role=user.role.value,
+            last_activity_at=(
+                db.query(AuditLog.timestamp)
+                .filter(AuditLog.user_id == user.user_id)
+                .order_by(AuditLog.timestamp.desc())
+                .limit(1)
+                .scalar()
+            ),
+        )
+        for mapping, user in rows
+    ]
+
+
+@router.delete("/{project_id}/members/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_member(
+    project_id: int,
+    user_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_project_access(AccessLevel.admin)),
+):
+    mapping = db.query(UserProjectMapping).filter(
+        UserProjectMapping.project_id == project_id,
+        UserProjectMapping.user_id == user_id,
+    ).first()
+    if not mapping:
+        raise HTTPException(status_code=404, detail="Project member not found")
+    db.delete(mapping)
     db.commit()

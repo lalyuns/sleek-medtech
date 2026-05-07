@@ -6,6 +6,7 @@ class MaterialParameters(BaseModel):
     density: float
     tensile_strength: float
     unit_price: float
+    unit_price_unit: str = "per_g"
 
 
 class MaterialCreate(BaseModel):

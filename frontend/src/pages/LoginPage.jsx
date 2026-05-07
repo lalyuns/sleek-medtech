@@ -10,12 +10,12 @@ export default function LoginPage() {
   const { login } = useAuthStore()
   const navigate = useNavigate()
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const handleSubmit = async (event) => {
+    event.preventDefault()
     setError('')
     try {
       const { data } = await api.post('/auth/login', { email, password })
-      login(data.access_token)
+      login(data.access_token, data.refresh_token)
       navigate('/projects')
     } catch {
       setError('Email 或密碼錯誤')
@@ -24,20 +24,24 @@ export default function LoginPage() {
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#0f172a' }}>
-      <form onSubmit={handleSubmit} style={{ background: '#1e293b', padding: 40, borderRadius: 12, width: 360, color: '#f1f5f9' }}>
-        <h2 style={{ marginBottom: 24, textAlign: 'center' }}>睿程生醫 · 登入</h2>
+      <form onSubmit={handleSubmit} style={{ background: '#1e293b', padding: 40, borderRadius: 8, width: 360, color: '#f1f5f9' }}>
+        <h2 style={{ marginBottom: 24, textAlign: 'center' }}>Sleek MedTech 登入</h2>
         {error && <p style={{ color: '#f87171', marginBottom: 16 }}>{error}</p>}
         <label style={{ display: 'block', marginBottom: 8 }}>Email</label>
         <input
-          type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
           required
-          style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #334155', background: '#0f172a', color: '#f1f5f9', marginBottom: 16, boxSizing: 'border-box' }}
+          style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #334155', background: '#0f172a', color: '#f1f5f9', marginBottom: 16 }}
         />
         <label style={{ display: 'block', marginBottom: 8 }}>密碼</label>
         <input
-          type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+          type="password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
           required
-          style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #334155', background: '#0f172a', color: '#f1f5f9', marginBottom: 24, boxSizing: 'border-box' }}
+          style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #334155', background: '#0f172a', color: '#f1f5f9', marginBottom: 24 }}
         />
         <button
           type="submit"

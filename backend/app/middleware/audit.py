@@ -1,6 +1,9 @@
 import json
 import re
-from typing import Optional, Tuple
+from datetime import date, datetime
+from decimal import Decimal
+from enum import Enum
+from typing import Any, Optional, Tuple
 
 from jose import JWTError, jwt
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -10,6 +13,13 @@ from starlette.responses import Response
 from app.config import settings
 from app.database import SessionLocal
 from app.models.audit_log import AuditLog, AuditAction, AuditEntityType
+from app.models.cost import Cost
+from app.models.feedback import Feedback
+from app.models.material import Material
+from app.models.model_version import ModelVersion
+from app.models.project import Project
+from app.models.report import Report
+from app.models.user import User
 
 # (method, path_regex, action, entity_type, path_id_group)
 # path_id_group=None means read entity_id from response body
@@ -18,10 +28,17 @@ _PATTERNS = [
     ("PUT",    r"^/api/v1/materials/(\d+)/?$",                    "update",    "material",      1),
     ("DELETE", r"^/api/v1/materials/(\d+)/?$",                    "delete",    "material",      1),
     ("POST",   r"^/api/v1/projects/?$",                           "create",    "project",       None),
-    ("POST",   r"^/api/v1/projects/\d+/versions/?$",              "create",    "model_version", None),
+    ("POST",   r"^/api/v1/projects/\d+/versions/upload/init/?$",  "upload",    "model_version", None),
     ("POST",   r"^/api/v1/projects/\d+/versions/(\d+)/lock/?$",   "sign_off",  "model_version", 1),
     ("POST",   r"^/api/v1/projects/\d+/versions/\d+/feedbacks/?$","create",    "feedback",      None),
+    ("PUT",    r"^/api/v1/projects/\d+/versions/\d+/feedbacks/(\d+)/?$","update", "feedback",   1),
+    ("DELETE", r"^/api/v1/projects/\d+/versions/\d+/feedbacks/(\d+)/?$","delete", "feedback",   1),
     ("POST",   r"^/api/v1/projects/\d+/costs/?$",                 "create",    "cost",          None),
+    ("POST",   r"^/api/v1/projects/\d+/reports/?$",               "create",    "report",        None),
+    ("DELETE", r"^/api/v1/projects/\d+/reports/(\d+)/?$",         "delete",    "report",        1),
+    ("POST",   r"^/api/v1/users/?$",                               "create",    "user",          None),
+    ("PUT",    r"^/api/v1/users/(\d+)/?$",                         "update",    "user",          1),
+    ("DELETE", r"^/api/v1/users/(\d+)/?$",                         "delete",    "user",          1),
 ]
 
 _ENTITY_ID_FIELDS = {
@@ -29,7 +46,9 @@ _ENTITY_ID_FIELDS = {
     "project":       "project_id",
     "model_version": "version_id",
     "feedback":      "feedback_id",
+    "report":        "report_id",
     "cost":          "cost_id",
+    "user":          "user_id",
 }
 
 
@@ -56,21 +75,91 @@ def _match_pattern(method: str, path: str) -> Optional[Tuple[str, str, Optional[
     return None
 
 
-def _write_audit(user_id: int, action: str, entity_type: str, entity_id: int):
+_SNAPSHOT_MODELS = {
+    "material": (Material, "material_id"),
+    "project": (Project, "project_id"),
+    "model_version": (ModelVersion, "version_id"),
+    "feedback": (Feedback, "feedback_id"),
+    "report": (Report, "report_id"),
+    "cost": (Cost, "cost_id"),
+    "user": (User, "user_id"),
+}
+
+
+def _serialize(value: Any) -> Any:
+    if isinstance(value, Enum):
+        return value.value
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    if isinstance(value, Decimal):
+        return float(value)
+    return value
+
+
+def _snapshot(entity_type: str, entity_id: Optional[int]) -> Optional[dict]:
+    if not entity_id:
+        return None
+    model_info = _SNAPSHOT_MODELS.get(entity_type)
+    if not model_info:
+        return None
+    model, pk_name = model_info
+    db = None
     try:
         db = SessionLocal()
+        obj = db.query(model).filter(getattr(model, pk_name) == entity_id).first()
+        if not obj:
+            return None
+        return {
+            column.name: _serialize(getattr(obj, column.name))
+            for column in obj.__table__.columns
+            if column.name != "hashed_password"
+        }
+    except Exception:
+        return None
+    finally:
+        if db:
+            db.close()
+
+
+def _request_id(request: Request) -> Optional[str]:
+    return (
+        request.headers.get("X-Request-ID")
+        or request.headers.get("X-Correlation-ID")
+        or request.headers.get("X-Amzn-Trace-Id")
+    )
+
+
+def _write_audit(
+    user_id: int,
+    action: str,
+    entity_type: str,
+    entity_id: int,
+    request: Request,
+    old_values: Optional[dict],
+    new_values: Optional[dict],
+):
+    db = None
+    try:
+        db = SessionLocal()
+        forwarded_for = request.headers.get("X-Forwarded-For")
         log = AuditLog(
             user_id=user_id,
             action=AuditAction(action),
             entity_type=AuditEntityType(entity_type),
             entity_id=entity_id,
+            ip_address=(forwarded_for.split(",")[0].strip() if forwarded_for else (request.client.host if request.client else None)),
+            user_agent=request.headers.get("User-Agent"),
+            request_id=_request_id(request),
+            old_values=old_values,
+            new_values=new_values,
         )
         db.add(log)
         db.commit()
     except Exception:
         pass
     finally:
-        db.close()
+        if db:
+            db.close()
 
 
 class AuditMiddleware(BaseHTTPMiddleware):
@@ -83,6 +172,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         action, entity_type, entity_id_from_path = match
+        old_values = _snapshot(entity_type, entity_id_from_path)
 
         # If entity_id is in the path we don't need to read the response body
         if entity_id_from_path is not None:
@@ -90,7 +180,15 @@ class AuditMiddleware(BaseHTTPMiddleware):
             if 200 <= response.status_code < 300:
                 user_id = _extract_user_id(request)
                 if user_id:
-                    _write_audit(user_id, action, entity_type, entity_id_from_path)
+                    _write_audit(
+                        user_id,
+                        action,
+                        entity_type,
+                        entity_id_from_path,
+                        request,
+                        old_values,
+                        _snapshot(entity_type, entity_id_from_path),
+                    )
             return response
 
         # Need to buffer response to read the created entity's ID
@@ -109,7 +207,15 @@ class AuditMiddleware(BaseHTTPMiddleware):
                 id_field = _ENTITY_ID_FIELDS.get(entity_type)
                 entity_id = int(body_json[id_field]) if id_field and id_field in body_json else None
                 if entity_id:
-                    _write_audit(user_id, action, entity_type, entity_id)
+                    _write_audit(
+                        user_id,
+                        action,
+                        entity_type,
+                        entity_id,
+                        request,
+                        None,
+                        _snapshot(entity_type, entity_id),
+                    )
             except Exception:
                 pass
 

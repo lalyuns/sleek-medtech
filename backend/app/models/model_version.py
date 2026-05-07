@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime
 from typing import Optional
-from sqlalchemy import String, Text, Integer, Float, Enum as SAEnum, DateTime, ForeignKey, func
+from sqlalchemy import String, Text, Integer, Float, Enum as SAEnum, DateTime, ForeignKey, func, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 from .base import Base, SoftDeleteMixin
 
@@ -29,3 +29,7 @@ class ModelVersion(Base, SoftDeleteMixin):
     )
     total_chunks: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     timestamp: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    signed_off_by: Mapped[Optional[int]] = mapped_column(ForeignKey("users.user_id"), nullable=True)
+    signed_off_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    signoff_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    signoff_user_snapshot: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)

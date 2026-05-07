@@ -16,6 +16,10 @@ class LogoutRequest(BaseModel):
     refresh_token: str
 
 
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+
 class TokenPayload(BaseModel):
     user_id: int
     role: str

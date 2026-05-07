@@ -15,3 +15,4 @@ rq==1.16.2
 minio==7.2.7
 numpy-stl==3.1.2
 python-dotenv==1.0.1
+pytest==8.3.3

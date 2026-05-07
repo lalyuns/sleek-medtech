@@ -13,6 +13,10 @@ class FeedbackCreate(BaseModel):
     coordinates: Optional[Coordinates] = None
 
 
+class FeedbackUpdate(BaseModel):
+    content: str
+
+
 class FeedbackOut(BaseModel):
     feedback_id: int
     target_version_id: int

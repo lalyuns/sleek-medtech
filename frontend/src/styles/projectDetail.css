@@ -1,0 +1,172 @@
+.project-detail-page {
+  padding: 24px;
+  background: #0f172a;
+  min-height: 100vh;
+  color: #f1f5f9;
+}
+
+.project-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.project-detail-title {
+  min-width: 0;
+}
+
+.project-detail-title h1 {
+  margin-bottom: 4px;
+  overflow-wrap: anywhere;
+}
+
+.project-detail-trace {
+  margin-left: auto;
+}
+
+.project-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.project-upload-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 520px) 1fr;
+  gap: 16px;
+}
+
+.project-review-grid {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr) 320px;
+  gap: 16px;
+  height: calc(100vh - 190px);
+}
+
+.project-viewer-frame {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #334155;
+  min-height: 520px;
+}
+
+.project-bom-grid {
+  display: grid;
+  grid-template-columns: 420px minmax(0, 1fr);
+  gap: 16px;
+}
+
+.project-overview-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.95fr) minmax(320px, 1.05fr);
+  gap: 16px;
+}
+
+.reports-panel-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 460px) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.members-panel-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.status-banner {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 50;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: rgba(15, 23, 42, 0.96);
+  color: #f8fafc;
+  box-shadow: 0 18px 48px rgba(2, 6, 23, 0.45);
+}
+
+.status-banner.error {
+  border-color: #dc2626;
+}
+
+.status-banner.success {
+  border-color: #22c55e;
+}
+
+.status-banner.info {
+  border-color: #3b82f6;
+}
+
+@media (max-width: 1100px) {
+  .project-detail-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .project-detail-trace {
+    margin-left: 0;
+  }
+
+  .project-upload-grid,
+  .project-bom-grid,
+  .project-overview-grid,
+  .project-review-grid,
+  .reports-panel-grid,
+  .members-panel-grid {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .project-review-grid > :first-child {
+    order: 1;
+  }
+
+  .project-viewer-frame {
+    order: 2;
+    min-height: 560px;
+  }
+
+  .project-review-grid > :last-child {
+    order: 3;
+    min-height: 320px;
+  }
+}
+
+@media (max-width: 900px) {
+  .audit-panel-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .project-detail-page {
+    padding: 14px;
+  }
+
+  .project-detail-header {
+    gap: 10px;
+  }
+
+  .project-detail-title h1 {
+    font-size: 28px;
+    line-height: 1.1;
+  }
+
+  .project-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .project-tabs button {
+    width: 100%;
+  }
+
+  .project-viewer-frame {
+    min-height: 460px;
+  }
+}

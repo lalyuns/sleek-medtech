@@ -1,0 +1,3 @@
+Sterilization validation record.
+Cycle: steam 134C, 18 min.
+Result: pass.

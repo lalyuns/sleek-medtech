@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -29,9 +29,14 @@ def create_cost(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_project_access(AccessLevel.edit)),
 ):
+    try:
+        cost_type = CostType(body.type)
+    except ValueError:
+        raise HTTPException(status_code=422, detail=f"Invalid cost type: {body.type}")
+
     cost = Cost(
         project_id=project_id,
-        type=CostType(body.type),
+        type=cost_type,
         amount=body.amount,
         description=body.description,
     )

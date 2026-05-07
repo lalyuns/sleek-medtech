@@ -1,5 +1,5 @@
-from typing import List, Optional
-from pydantic import BaseModel
+from typing import Any, Dict, List, Optional
+from pydantic import BaseModel, Field
 
 
 class ReferenceEdgeCreate(BaseModel):
@@ -17,18 +17,22 @@ class ReferenceEdgeOut(BaseModel):
 
 
 class TraceNode(BaseModel):
-    version_id: int
-    version_number: int
-    status: str
-    description: Optional[str]
+    id: str
+    type: str = "default"
+    position: Dict[str, float]
+    data: Dict[str, Any]
+    style: Dict[str, Any]
 
     model_config = {"from_attributes": True}
 
 
 class TraceEdge(BaseModel):
-    source_version_id: int
-    target_id: int
-    target_type: str
+    id: str
+    source: str
+    target: str
+    label: Optional[str] = None
+    animated: bool = False
+    style: Dict[str, Any] = Field(default_factory=dict)
 
     model_config = {"from_attributes": True}
 

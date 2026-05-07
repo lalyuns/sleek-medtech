@@ -1,18 +1,27 @@
 """
-RQ worker task — called by the RQ worker process after chunked upload completes.
-Run the worker with:  rq worker --url redis://localhost:6379/0
+RQ worker task invoked after chunked upload completes.
+Run with: rq worker --url redis://localhost:6379/0
 """
 import hashlib
 import io
 import os
 import tempfile
 
+from rq import get_current_job
 from stl import mesh as stl_mesh
 
-from app.config import settings
 from app.database import SessionLocal
 from app.models.model_version import ModelVersion, VersionStatus
-from app.storage import minio_client, ensure_bucket, BUCKET
+from app.storage import minio_client, ensure_bucket, BUCKET, public_object_url
+
+
+def _set_progress(version_id: int, status: str, progress: int, message: str = ""):
+    job = get_current_job()
+    if job:
+        job.meta["status"] = status
+        job.meta["progress"] = progress
+        job.meta["message"] = message
+        job.save_meta()
 
 
 def _fetch_and_assemble(version_id: int) -> bytes:
@@ -56,18 +65,18 @@ def process_upload(version_id: int):
         if not version:
             return
 
-        # Assemble chunks
+        _set_progress(version_id, "PROCESSING", 20, "正在合併分塊")
         file_data = _fetch_and_assemble(version_id)
 
-        # Verify SHA-256
+        _set_progress(version_id, "PROCESSING", 40, "正在驗證 SHA-256")
         actual_hash = hashlib.sha256(file_data).hexdigest()
         if actual_hash != version.hash_value:
             raise ValueError(f"Hash mismatch: expected {version.hash_value}, got {actual_hash}")
 
-        # Compute volume from STL
+        _set_progress(version_id, "PROCESSING", 60, "正在解析 STL 體積")
         volume = _calculate_volume(file_data)
 
-        # Upload assembled file to final location
+        _set_progress(version_id, "PROCESSING", 80, "正在寫入模型檔案")
         ensure_bucket()
         final_key = f"models/{version_id}/model.stl"
         minio_client.put_object(
@@ -75,21 +84,17 @@ def process_upload(version_id: int):
             content_type="model/stl",
         )
 
-        # Build public-style URL (MinIO internal URL)
-        file_url = f"http://localhost:9000/{BUCKET}/{final_key}"
-
-        # Update version record
-        version.file_url = file_url
+        version.file_url = public_object_url(final_key)
         version.volume = volume
         version.status = VersionStatus.draft
         db.commit()
 
-        # Clean up temp chunks
         _delete_chunks(version_id)
+        _set_progress(version_id, "DONE", 100, "上傳完成")
 
     except Exception as exc:
         db.rollback()
-        # Mark version as failed by keeping status=uploading so operators can retry
+        _set_progress(version_id, "FAILED", 100, str(exc))
         raise
     finally:
         db.close()

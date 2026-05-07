@@ -13,5 +13,6 @@ class ProjectOut(BaseModel):
     description: Optional[str]
     status: str
     owner_id: int
+    current_access_level: Optional[str] = None
 
     model_config = {"from_attributes": True}

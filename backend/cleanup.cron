@@ -1,0 +1,1 @@
+0 3 * * * cd /app && PYTHONPATH=/app python /app/cleanup.py >> /var/log/cleanup.log 2>&1

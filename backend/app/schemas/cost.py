@@ -24,7 +24,16 @@ class BOMOut(BaseModel):
     version_id: int
     material_name: str
     volume: Optional[float]
+    volume_unit: str = "mm3"
+    material_volume_cm3: Optional[float]
+    density: float
+    density_unit: str = "g/cm3"
     unit_price: float
+    unit_price_unit: str = "per_g"
+    material_quantity: Optional[float]
+    material_quantity_unit: str = "g"
     material_cost: Optional[float]
+    labor_cost: float
+    external_sample_cost: float
     other_costs: List[CostOut]
     total_cost: float

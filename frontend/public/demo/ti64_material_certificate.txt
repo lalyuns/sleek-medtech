@@ -1,0 +1,4 @@
+Ti-6Al-4V ELI material certificate
+Lot: TI64-2026-041
+Density: 4.43 g/cm3
+Tensile strength: 895 MPa
