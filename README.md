@@ -4,6 +4,63 @@
 
 完整規格請看 [規格書.md](規格書.md)。
 
+## 環境建置指引
+
+第一次拿到專案的人，建議先裝好下列工具：
+
+| 工具 | 建議版本 | 用途 |
+| --- | --- | --- |
+| Git | 最新版 | 下載專案與版本控制 |
+| Docker Desktop | 最新版，需啟動 WSL2 backend | 啟 MySQL、Redis、MinIO，也可完整容器化部署 |
+| Python | 3.11.x | 後端 FastAPI、Alembic、pytest |
+| Node.js | 20 LTS 或更新 LTS | 前端 Vite、Playwright、build |
+
+從 GitHub 下載專案：
+
+```powershell
+cd C:\Users\User
+git clone https://github.com/lalyuns/sleek-medtech.git
+cd C:\Users\User\sleek-medtech
+copy .env.example .env
+```
+
+先啟動基礎服務：
+
+```powershell
+docker compose up -d db redis minio
+```
+
+如果只想看成果，不想分開開前後端，可用完整容器模式：
+
+```powershell
+docker compose up -d --build
+```
+
+完整容器模式啟動後開：
+
+| 項目 | URL |
+| --- | --- |
+| 前端 | http://localhost:5173 |
+| API 文件 | http://localhost:8000/docs |
+| MinIO Console | http://localhost:9001 |
+
+若要用本機開發模式，照下面「快速啟動」分別開 backend、worker、frontend。第一次建 Python venv 可執行：
+
+```powershell
+cd C:\Users\User\sleek-medtech\backend
+py -3.11 -m venv venv
+.\venv\Scripts\activate
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+常見問題：
+
+- `docker compose` 連不上：先確認 Docker Desktop 已開啟，且左下角顯示 Engine running。
+- `localhost:3307` 連不上：通常是 MySQL 容器還沒 ready，等 10 到 30 秒後重跑 `alembic upgrade head`。
+- PowerShell 找不到 `python`：改用 `py -3.11`，或重新安裝 Python 並勾選 Add python.exe to PATH。
+- 前端 `npm install` 失敗：確認 Node.js 已安裝，並在 `frontend/` 目錄執行。
+
 ## 快速啟動
 
 啟動資料庫、Redis 與 MinIO：
@@ -88,6 +145,14 @@ npm run lint
 npm run build
 npm run test:e2e
 ```
+
+## 已知後續優化
+
+這些項目不是目前缺失，功能與驗證都已通過；它們是之後若要再 polish 可處理的技術債：
+
+- `ModelViewer` bundle 仍偏大，主因是 Three.js / React Three Fiber 本體較大。功能正常，若要再優化可拆更細的 vendor chunk。
+- `pytest` 目前會出現一個 Pydantic v2 deprecation warning，來自舊式 `model_config` / `Config` 用法周邊；目前相容，之後可整理成純 Pydantic v2 寫法。
+- GitHub repo 建議設定 branch protection，避免直接把 `main` 改亂；建議要求 PR review 後才能 merge。
 
 ## 設計原則
 
