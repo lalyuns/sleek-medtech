@@ -140,13 +140,22 @@ npm run build
 npm run test:e2e
 ```
 
-## 已知後續優化
+## GitHub 保護設定
 
-這些項目不是目前缺失，功能與驗證都已通過；它們是之後若要再 polish 可處理的技術債：
+建議在 GitHub repo 啟用 `main` branch protection，避免可部署版本被直接推亂。
 
-- `ModelViewer` bundle 仍偏大，主因是 Three.js / React Three Fiber 本體較大。功能正常，若要再優化可拆更細的 vendor chunk。
-- `pytest` 目前會出現一個 Pydantic v2 deprecation warning，來自舊式 `model_config` / `Config` 用法周邊；目前相容，之後可整理成純 Pydantic v2 寫法。
-- GitHub repo 建議設定 branch protection，避免直接把 `main` 改亂；建議要求 PR review 後才能 merge。
+設定路徑：
+
+1. 打開 GitHub repo。
+2. 進入 `Settings` -> `Branches`。
+3. 在 `Branch protection rules` 新增規則。
+4. Branch name pattern 填 `main`。
+5. 勾選 `Require a pull request before merging`。
+6. 勾選 `Require approvals`，建議至少 `1` 人 review。
+7. 勾選 `Require status checks to pass before merging`，之後若有 CI 可把測試加入必過條件。
+8. 勾選 `Do not allow bypassing the above settings`，避免管理員不小心直接推到 `main`。
+
+專案已提供 `.github/pull_request_template.md`，之後所有功能修改建議透過 PR 走 review 與驗證 checklist。
 
 ## 設計原則
 

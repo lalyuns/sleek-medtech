@@ -1,7 +1,7 @@
 import { Suspense, useEffect, useState, useMemo, useRef, Component } from 'react'
-import { Canvas, useLoader, useThree } from '@react-three/fiber'
-import { OrbitControls, Html, Grid, Center } from '@react-three/drei'
+import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js'
+import { OrbitControls as ThreeOrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import * as THREE from 'three'
 import useViewerStore from '../../store/viewerStore'
 import ClipControls from './ClipControls'
@@ -41,9 +41,14 @@ class ViewerErrorBoundary extends Component {
 }
 
 function STLMesh({ url, controlsRef, canWriteFeedback, onPickPoint }) {
-  const geometry = useLoader(STLLoader, url)
+  const loadedGeometry = useLoader(STLLoader, url)
   const { camera } = useThree()
   const { clipAxes, setClipRange } = useViewerStore()
+  const geometry = useMemo(() => {
+    const centeredGeometry = loadedGeometry.clone()
+    centeredGeometry.center()
+    return centeredGeometry
+  }, [loadedGeometry])
 
   const clippingPlanes = useMemo(() => {
     const planes = []
@@ -52,6 +57,10 @@ function STLMesh({ url, controlsRef, canWriteFeedback, onPickPoint }) {
     if (clipAxes.z.enabled) planes.push(new THREE.Plane(new THREE.Vector3(0, 0, -1), clipAxes.z.constant))
     return planes
   }, [clipAxes])
+
+  useEffect(() => {
+    return () => geometry.dispose()
+  }, [geometry])
 
   // Three.js camera and controls are external mutable objects; this effect fits the loaded STL into view.
   // eslint-disable-next-line react-hooks/immutability
@@ -85,24 +94,25 @@ function STLMesh({ url, controlsRef, canWriteFeedback, onPickPoint }) {
   }, [camera, controlsRef, geometry, setClipRange])
 
   return (
-    <Center>
-      <mesh geometry={geometry} onClick={(event) => { event.stopPropagation(); if (canWriteFeedback) onPickPoint(event.point) }}>
-        <meshStandardMaterial color="#60a5fa" clippingPlanes={clippingPlanes} side={THREE.DoubleSide} />
-      </mesh>
-    </Center>
+    <mesh geometry={geometry} onClick={(event) => { event.stopPropagation(); if (canWriteFeedback) onPickPoint(event.point) }}>
+      <meshStandardMaterial color="#60a5fa" clippingPlanes={clippingPlanes} side={THREE.DoubleSide} />
+    </mesh>
   )
 }
 
 function AnnotationPins() {
   const { annotations } = useViewerStore()
   return annotations.map((annotation) => (
-    <Html key={annotation.id} position={[annotation.position.x, annotation.position.y, annotation.position.z]} distanceFactor={5}>
-      <div
-        style={{ background: '#f59e0b', color: '#000', padding: '2px 8px', borderRadius: 4, fontSize: 12, whiteSpace: 'nowrap', pointerEvents: 'none' }}
-      >
-        註記：{annotation.text}
-      </div>
-    </Html>
+    <group key={annotation.id} position={[annotation.position.x, annotation.position.y, annotation.position.z]}>
+      <mesh>
+        <sphereGeometry args={[0.11, 14, 14]} />
+        <meshStandardMaterial color="#f59e0b" emissive="#f59e0b" emissiveIntensity={0.25} depthTest={false} />
+      </mesh>
+      <mesh rotation={[Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.2, 0.26, 24]} />
+        <meshBasicMaterial color="#fde68a" side={THREE.DoubleSide} depthTest={false} />
+      </mesh>
+    </group>
   ))
 }
 
@@ -120,24 +130,43 @@ function PendingAnnotationMarker() {
         <ringGeometry args={[0.28, 0.36, 32]} />
         <meshBasicMaterial color="#fde68a" side={THREE.DoubleSide} depthTest={false} />
       </mesh>
-      <Html center zIndexRange={[120, 0]}>
-        <div style={{
-          transform: 'translate(-50%, -38px)',
-          background: '#f59e0b',
-          color: '#111827',
-          borderRadius: 999,
-          padding: '3px 9px',
-          fontSize: 12,
-          fontWeight: 800,
-          whiteSpace: 'nowrap',
-          boxShadow: '0 8px 24px rgba(245, 158, 11, 0.35)',
-          pointerEvents: 'none',
-        }}>
-          新註記
-        </div>
-      </Html>
     </group>
   )
+}
+
+function SceneControls({ controlsRef, mouseButtons }) {
+  const { camera, gl } = useThree()
+  const controls = useMemo(() => {
+    const instance = new ThreeOrbitControls(camera, gl.domElement)
+    instance.enableDamping = true
+    instance.enablePan = true
+    instance.mouseButtons = mouseButtons
+    return instance
+  }, [camera, gl.domElement, mouseButtons])
+
+  useEffect(() => {
+    controlsRef.current = controls
+    return () => {
+      controlsRef.current = null
+      controls.dispose()
+    }
+  }, [controls, controlsRef])
+
+  useFrameControls(controls)
+  return null
+}
+
+function useFrameControls(controls) {
+  const frame = useThree((state) => state.invalidate)
+  useFrame(() => {
+    controls.update()
+  }, -1)
+
+  useEffect(() => {
+    const invalidate = () => frame()
+    controls.addEventListener('change', invalidate)
+    return () => controls.removeEventListener('change', invalidate)
+  }, [controls, frame])
 }
 
 export default function ModelViewer({ fileUrl, projectId, versionId, canWriteFeedback = true }) {
@@ -216,8 +245,8 @@ export default function ModelViewer({ fileUrl, projectId, versionId, canWriteFee
           <ambientLight intensity={0.5} />
           <directionalLight position={[10, 10, 5]} intensity={1} />
           <directionalLight position={[-10, -10, -5]} intensity={0.3} />
-          <Grid infiniteGrid fadeDistance={30} cellColor="#1e293b" sectionColor="#334155" />
-          <OrbitControls ref={controlsRef} makeDefault enablePan mouseButtons={mouseButtons} />
+          <gridHelper args={[120, 80, '#334155', '#1e293b']} />
+          <SceneControls controlsRef={controlsRef} mouseButtons={mouseButtons} />
           <Suspense fallback={null}>
             {modelUrl ? <STLMesh url={modelUrl} controlsRef={controlsRef} canWriteFeedback={canWriteFeedback} onPickPoint={pickPoint} /> : null}
           </Suspense>
