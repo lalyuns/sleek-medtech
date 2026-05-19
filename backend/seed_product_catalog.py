@@ -1,5 +1,13 @@
 from app.database import SessionLocal
-from app.models.product import Component, ComponentSourceType, Product, ProductBOMItem, ProductStatus
+from app.models.product import (
+    Component,
+    ComponentSourceType,
+    Product,
+    ProductBOMItem,
+    ProductRequest,
+    ProductRequestStatus,
+    ProductStatus,
+)
 from app.models.project import Project
 
 
@@ -62,6 +70,31 @@ def upsert_bom_item(db, product, component, quantity, unit="pcs", note=None, sor
     item.sort_order = sort_order
     item.is_deleted = False
     return item
+
+
+def upsert_product_request(db, product, requester_name, organization, email, phone, quantity, message, status):
+    request = db.query(ProductRequest).filter(ProductRequest.email == email, ProductRequest.product_id == product.product_id).first()
+    if not request:
+        request = ProductRequest(
+            product_id=product.product_id,
+            requester_name=requester_name,
+            organization=organization,
+            email=email,
+            phone=phone,
+            quantity=quantity,
+            message=message,
+            status=status,
+        )
+        db.add(request)
+        db.flush()
+    request.requester_name = requester_name
+    request.organization = organization
+    request.phone = phone
+    request.quantity = quantity
+    request.message = message
+    request.status = status
+    request.is_deleted = False
+    return request
 
 
 def seed_product_catalog():
@@ -178,6 +211,114 @@ def seed_product_catalog():
         upsert_bom_item(db, cranial_set, screw_small, 8, "pcs", "外購，可依醫師需求調整數量。", 20)
         upsert_bom_item(db, cranial_set, sterile_pack, 1, "set", "交付前需確認包材與標籤。", 30)
 
+        drill_sleeve = upsert_component(
+            db,
+            "鑽孔導引套",
+            "BUY-DRILL-SLEEVE",
+            ComponentSourceType.purchased,
+            "pcs",
+            supplier_name="精密加工供應商",
+            unit_cost=680,
+            lead_time_days=5,
+            is_critical=True,
+            requires_certificate=True,
+        )
+        peek_blank = upsert_component(
+            db,
+            "PEEK 試作胚料",
+            "BUY-PEEK-BLANK",
+            ComponentSourceType.purchased,
+            "pcs",
+            supplier_name="高分子材料供應商",
+            unit_cost=1350,
+            lead_time_days=6,
+            is_critical=True,
+            requires_certificate=True,
+        )
+        guide_fixture = upsert_component(
+            db,
+            "導板治具固定測試",
+            "OUT-GUIDE-FIXTURE",
+            ComponentSourceType.outsourced,
+            "lot",
+            supplier_name="委外治具測試廠",
+            unit_cost=1500,
+            lead_time_days=4,
+            is_critical=False,
+            requires_certificate=False,
+        )
+        surgical_guide_set = upsert_product(
+            db,
+            "術前切割導板套組",
+            "KIT-SG-2026",
+            "含 PEEK 導板、鑽孔導引套、術前貼合檢查與供應商報價文件的試作套組。",
+            body_region="口腔顎面 / 下顎骨",
+            clinical_use="術前切割定位與鑽孔導引",
+            surgical_stage="術前規劃、術中定位",
+            indication="需要將 CT 規劃轉換為手術定位與切割路徑的客製化顎面手術情境。",
+        )
+        upsert_bom_item(db, surgical_guide_set, guide, 1, "pcs", "由 SG 專案 STL 版本產生導板幾何。", 10)
+        upsert_bom_item(db, surgical_guide_set, drill_sleeve, 2, "pcs", "外購導引套，需確認尺寸公差。", 20)
+        upsert_bom_item(db, surgical_guide_set, peek_blank, 1, "pcs", "PEEK 試作胚料需附批號。", 30)
+        upsert_bom_item(db, surgical_guide_set, guide_fixture, 1, "lot", "供應商回傳固定測試紀錄。", 40)
+        upsert_bom_item(db, surgical_guide_set, sterile_pack, 1, "set", "試作交付仍需標籤與包裝紀錄。", 50)
+
+        upsert_product_request(
+            db,
+            mandible_set,
+            "王醫師",
+            "台北市立聯合醫院口腔顎面外科",
+            "dr.wang@example-hospital.tw",
+            "02-2345-1001",
+            1,
+            "下顎腫瘤切除後重建，需要先確認固定板與導板交期。",
+            ProductRequestStatus.reviewing,
+        )
+        upsert_product_request(
+            db,
+            cranial_set,
+            "林小姐",
+            "創投醫材加速器",
+            "lin.vc@example.com",
+            "0912-000-168",
+            2,
+            "想了解顱骨修補網片的交付文件與量產前評估資料。",
+            ProductRequestStatus.quoted,
+        )
+        upsert_product_request(
+            db,
+            surgical_guide_set,
+            "陳醫師",
+            "高雄長庚顎面外科",
+            "dr.chen@example-hospital.tw",
+            "07-731-7123",
+            1,
+            "希望試作術前切割導板，並確認 PEEK 試作與鑽孔套件費用。",
+            ProductRequestStatus.submitted,
+        )
+        upsert_product_request(
+            db,
+            mandible_set,
+            "張採購",
+            "中部醫療器材經銷商",
+            "procurement.chang@example.com",
+            "04-2222-7788",
+            3,
+            "詢問下顎重建固定板套組是否可提供醫院評估樣件。",
+            ProductRequestStatus.approved,
+        )
+        upsert_product_request(
+            db,
+            cranial_set,
+            "黃先生",
+            "個人諮詢",
+            "huang.patient@example.com",
+            "0988-123-456",
+            1,
+            "家屬想了解顱骨修補網片是否適合術後修補需求。",
+            ProductRequestStatus.rejected,
+        )
+
         link_demo_projects_to_products(db)
 
         db.commit()
@@ -192,12 +333,16 @@ def seed_product_catalog():
 def link_demo_projects_to_products(db):
     mandible_set = db.query(Product).filter(Product.sku == "KIT-MR-2026", Product.is_deleted == False).first()
     cranial_set = db.query(Product).filter(Product.sku == "KIT-CM-2026", Product.is_deleted == False).first()
+    surgical_guide_set = db.query(Product).filter(Product.sku == "KIT-SG-2026", Product.is_deleted == False).first()
     if mandible_set:
         for project in db.query(Project).filter(Project.name.like("%MR-2026-041%"), Project.is_deleted == False).all():
             project.product_id = mandible_set.product_id
     if cranial_set:
         for project in db.query(Project).filter(Project.name.like("%CM-2026-017%"), Project.is_deleted == False).all():
             project.product_id = cranial_set.product_id
+    if surgical_guide_set:
+        for project in db.query(Project).filter(Project.name.like("%SG-2026-009%"), Project.is_deleted == False).all():
+            project.product_id = surgical_guide_set.product_id
 
 
 if __name__ == "__main__":

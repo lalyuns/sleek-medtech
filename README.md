@@ -65,7 +65,7 @@ docker compose exec -T backend python reset_demo_data.py
 
 ## Demo 帳號與測資
 
-`reset_demo_data.py` 會重建使用者、專案、STL 版本、報告、材料、產品型錄與產品 BOM。
+`reset_demo_data.py` 會重建使用者、專案、STL 版本、報告、材料、產品型錄、產品 BOM 與外部申請單。
 
 | 角色 | Email | 密碼 |
 | --- | --- | --- |
@@ -74,12 +74,13 @@ docker compose exec -T backend python reset_demo_data.py
 | 醫師 | doctor.lin@hospital.example | doctor1234 |
 | 廠商 | vendor.wu@supplier.example | vendor1234 |
 
-重建後可看到兩個產品套組範例：
+重建後可看到三個產品套組範例：
 
 - 下顎重建固定板套組 `KIT-MR-2026`：客製主體、鈦合金骨釘、定位導板、滅菌包材、委外表面處理。
 - 顱骨修補網片套組 `KIT-CM-2026`：網片主體、微型固定螺釘 x8、滅菌包材與標籤。
+- 術前切割導板套組 `KIT-SG-2026`：PEEK 導板、鑽孔導引套、試作胚料、治具固定測試與包材標籤。
 
-demo 專案 `MR-2026-041` 與 `CM-2026-017` 會透過 `projects.product_id` 連到對應產品套組，所以在專案 BOM 分頁可同時看到器材用途/使用部位、目前 STL 版本、STL 材料成本與套組零件 BOM。
+demo 專案 `MR-2026-041`、`CM-2026-017` 與 `SG-2026-009` 會透過 `projects.product_id` 連到對應產品套組，所以在專案 BOM 分頁可同時看到器材用途/使用部位、目前 STL 版本、STL 材料成本與套組零件 BOM。外部申請列表也會建立新申請、審核中、已報價、已核准與已拒絕等狀態，方便 demo 時說明管理流程。
 
 ## 主要流程
 

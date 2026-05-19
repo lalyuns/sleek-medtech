@@ -333,10 +333,14 @@ def main():
     plate_v1_content = implant_plate_stl("mandibular_plate_v1", hole_count=6, curve=6.5, length=52)
     plate_v2_content = implant_plate_stl("mandibular_plate_v2", hole_count=7, curve=8.0, length=60)
     mesh_v1_content = cranial_mesh_stl("cranial_mesh_v1")
+    guide_v1_content = implant_plate_stl("surgical_guide_v1", hole_count=4, curve=4.5, length=44)
+    guide_v2_content = implant_plate_stl("surgical_guide_v2", hole_count=5, curve=5.2, length=48)
 
     mandible_v1, hash_v1 = write_demo_asset("mandibular_plate_v1.stl", plate_v1_content)
     mandible_v2, hash_v2 = write_demo_asset("mandibular_plate_v2.stl", plate_v2_content)
     cranial_v1, hash_cranial = write_demo_asset("cranial_mesh_v1.stl", mesh_v1_content)
+    guide_v1, hash_guide_v1 = write_demo_asset("surgical_guide_v1.stl", guide_v1_content)
+    guide_v2, hash_guide_v2 = write_demo_asset("surgical_guide_v2.stl", guide_v2_content)
 
     report_material_url, _ = write_demo_asset(
         "ti64_material_certificate.txt",
@@ -350,10 +354,20 @@ def main():
         "sterilization_validation.txt",
         "Sterilization validation record.\nCycle: steam 134C, 18 min.\nResult: pass.\n",
     )
+    report_fit_url, _ = write_demo_asset(
+        "surgical_guide_fit_check.txt",
+        "Surgical guide fit check\nCase: SG-2026-009\nResult: v2 improves posterior seat stability.\n",
+    )
+    report_quote_url, _ = write_demo_asset(
+        "supplier_quote_summary.txt",
+        "Supplier quotation summary\nPEEK guide print: 6800 NTD\nTurnaround: 4 working days\n",
+    )
 
     upload_demo_object("mandibular_plate_v1.stl", plate_v1_content, "model/stl")
     upload_demo_object("mandibular_plate_v2.stl", plate_v2_content, "model/stl")
     upload_demo_object("cranial_mesh_v1.stl", mesh_v1_content, "model/stl")
+    upload_demo_object("surgical_guide_v1.stl", guide_v1_content, "model/stl")
+    upload_demo_object("surgical_guide_v2.stl", guide_v2_content, "model/stl")
 
     db = SessionLocal()
     try:
@@ -379,13 +393,29 @@ def main():
             "elastic_modulus": 193000,
             "standard": "ASTM F138",
         })
-        get_material(db, "Medical grade PEEK", {
+        peek = get_material(db, "Medical grade PEEK", {
             "density": 1.32,
             "unit_price": 260,
             "unit_price_unit": "per_g",
             "tensile_strength": 100,
             "elastic_modulus": 3600,
             "standard": "ASTM F2026",
+        })
+        cobalt_chrome = get_material(db, "Cobalt chrome CoCrMo", {
+            "density": 8.30,
+            "unit_price": 520,
+            "unit_price_unit": "per_g",
+            "tensile_strength": 950,
+            "elastic_modulus": 210000,
+            "standard": "ASTM F1537",
+        })
+        get_material(db, "Bioabsorbable PLA-PCL", {
+            "density": 1.25,
+            "unit_price": 310,
+            "unit_price_unit": "per_g",
+            "tensile_strength": 55,
+            "elastic_modulus": 2400,
+            "standard": "prototype only",
         })
 
         mandible = get_project(
@@ -402,8 +432,15 @@ def main():
             "顱骨修補網片，用於展示多專案審閱、廠商唯讀權限與報告歸檔。",
             admin.user_id,
         )
+        guide = get_project(
+            db,
+            "SG-2026-009",
+            "術前切割導板 SG-2026-009",
+            "口腔顎面術前切割導板，展示從醫師回饋、PEEK 試作到供應商報價的完整協作流程。",
+            admin.user_id,
+        )
 
-        for project in (mandible, cranial):
+        for project in (mandible, cranial, guide):
             upsert_mapping(db, admin.user_id, project.project_id, AccessLevel.admin)
             upsert_mapping(db, engineer.user_id, project.project_id, AccessLevel.edit)
             upsert_mapping(db, doctor.user_id, project.project_id, AccessLevel.read_only)
@@ -412,9 +449,12 @@ def main():
         mandible_v1_row = get_version(db, mandible.project_id, engineer.user_id, ti64.material_id, 1, "依 CT 規劃建立的初版六孔下顎固定板輪廓。", 520.0, mandible_v1, hash_v1, VersionStatus.locked)
         mandible_v2_row = get_version(db, mandible.project_id, engineer.user_id, ti64.material_id, 2, "七孔彎曲固定板，後緣厚度降低並加大螺孔裕度。", 610.0, mandible_v2, hash_v2, VersionStatus.draft)
         cranial_v1_row = get_version(db, cranial.project_id, engineer.user_id, steel.material_id, 1, "橢圓顱骨網片格柵，用於製造報價與滅菌證明。", 840.0, cranial_v1, hash_cranial, VersionStatus.locked)
+        guide_v1_row = get_version(db, guide.project_id, engineer.user_id, peek.material_id, 1, "PEEK 術前切割導板初版，依咬合面定位三點支撐。", 430.0, guide_v1, hash_guide_v1, VersionStatus.locked)
+        guide_v2_row = get_version(db, guide.project_id, engineer.user_id, peek.material_id, 2, "導板 v2 增加後緣定位翼並加寬鑽孔導引套。", 475.0, guide_v2, hash_guide_v2, VersionStatus.draft)
         for version, reason in [
             (mandible_v1_row, "臨床審閱接受初版輪廓，後續進入 v2 細修。"),
             (cranial_v1_row, "顱骨網片貼合度已接受，可進入製造報價包。"),
+            (guide_v1_row, "初版定位可接受，但後緣穩定度需在 v2 調整。"),
         ]:
             version.signed_off_by = doctor.user_id
             version.signed_off_at = version.signed_off_at or datetime.utcnow()
@@ -428,28 +468,50 @@ def main():
 
         fb_edge = get_feedback(db, mandible_v1_row.version_id, doctor.user_id, "後緣太接近神經管，請將厚度降低 1 mm。", {"x": 22.0, "y": -5.0, "z": 0.9}, converted=True)
         fb_screw = get_feedback(db, mandible_v2_row.version_id, doctor.user_id, "螺孔裕度看起來可接受，請以此版作為簽核候選。", {"x": 12.0, "y": 2.0, "z": 0.8})
+        fb_mesh = get_feedback(db, cranial_v1_row.version_id, doctor.user_id, "網片前額側貼合良好，請保留孔距並補上滅菌文件。", {"x": -8.0, "y": 10.0, "z": 1.5}, converted=True)
+        fb_guide = get_feedback(db, guide_v1_row.version_id, doctor.user_id, "後緣定位翼容易晃動，建議增加 2 mm 支撐面。", {"x": 6.0, "y": -11.0, "z": 1.1}, converted=True)
+        fb_guide_v2 = get_feedback(db, guide_v2_row.version_id, doctor.user_id, "導引套角度可接受，請等待供應商報價後簽核。", {"x": 18.0, "y": 4.0, "z": 0.7})
 
         material_report = get_report(db, mandible.project_id, vendor.user_id, "TI64 批號 TI64-2026-041 材料證明", "material_test", report_material_url)
         bio_report = get_report(db, mandible.project_id, engineer.user_id, "ISO 10993 生物相容性摘要", "compliance", report_bio_url)
         sterile_report = get_report(db, cranial.project_id, engineer.user_id, "蒸氣滅菌確效紀錄", "sterilization", report_sterile_url)
+        guide_fit_report = get_report(db, guide.project_id, doctor.user_id, "術前導板貼合檢查紀錄", "clinical_review", report_fit_url)
+        supplier_quote_report = get_report(db, guide.project_id, vendor.user_id, "供應商 PEEK 試作報價摘要", "supplier_quote", report_quote_url)
 
         upsert_edge(db, mandible_v2_row.version_id, TargetType.old_version, mandible_v1_row.version_id)
         upsert_edge(db, mandible_v2_row.version_id, TargetType.feedback, fb_edge.feedback_id)
         upsert_edge(db, mandible_v2_row.version_id, TargetType.feedback, fb_screw.feedback_id)
         upsert_edge(db, mandible_v2_row.version_id, TargetType.report, material_report.report_id)
         upsert_edge(db, mandible_v2_row.version_id, TargetType.report, bio_report.report_id)
+        upsert_edge(db, cranial_v1_row.version_id, TargetType.feedback, fb_mesh.feedback_id)
         upsert_edge(db, cranial_v1_row.version_id, TargetType.report, sterile_report.report_id)
+        upsert_edge(db, guide_v2_row.version_id, TargetType.old_version, guide_v1_row.version_id)
+        upsert_edge(db, guide_v2_row.version_id, TargetType.feedback, fb_guide.feedback_id)
+        upsert_edge(db, guide_v2_row.version_id, TargetType.feedback, fb_guide_v2.feedback_id)
+        upsert_edge(db, guide_v2_row.version_id, TargetType.report, guide_fit_report.report_id)
+        upsert_edge(db, guide_v2_row.version_id, TargetType.report, supplier_quote_report.report_id)
 
         get_cost(db, mandible.project_id, CostType.labor, 4200, "研發輪廓調整與 DFM 檢討")
         get_cost(db, mandible.project_id, CostType.external_sample, 12800, "鈦合金樣件列印與後處理")
+        get_cost(db, mandible.project_id, CostType.labor, 1800, "醫師會議後螺孔位置微調")
+        get_cost(db, mandible.project_id, CostType.external_sample, 3200, "表面處理與清洗驗證")
         get_cost(db, cranial.project_id, CostType.labor, 2600, "網片貼合檢討")
         get_cost(db, cranial.project_id, CostType.external_sample, 7600, "316L 原型報價樣件")
+        get_cost(db, cranial.project_id, CostType.external_sample, 2100, "滅菌包材與標籤測試")
+        get_cost(db, guide.project_id, CostType.labor, 3100, "導板定位翼與鑽孔導引套修改")
+        get_cost(db, guide.project_id, CostType.external_sample, 6800, "PEEK 導板試作列印")
+        get_cost(db, guide.project_id, CostType.external_sample, 1500, "供應商治具固定測試")
 
         get_audit(db, engineer.user_id, AuditAction.upload, AuditEntityType.model_version, mandible_v1_row.version_id, "scenario-upload-mr-v1", {"project": mandible.name, "version": 1})
         get_audit(db, doctor.user_id, AuditAction.sign_off, AuditEntityType.model_version, mandible_v1_row.version_id, "scenario-signoff-mr-v1", {"status": "locked"})
         get_audit(db, engineer.user_id, AuditAction.upload, AuditEntityType.model_version, mandible_v2_row.version_id, "scenario-upload-mr-v2", {"project": mandible.name, "version": 2})
         get_audit(db, vendor.user_id, AuditAction.create, AuditEntityType.report, material_report.report_id, "scenario-report-ti64", {"report_type": material_report.report_type})
         get_audit(db, engineer.user_id, AuditAction.create, AuditEntityType.cost, mandible.project_id, "scenario-cost-mr", {"total_manual_costs": 17000})
+        get_audit(db, engineer.user_id, AuditAction.upload, AuditEntityType.model_version, guide_v1_row.version_id, "scenario-upload-sg-v1", {"project": guide.name, "version": 1})
+        get_audit(db, doctor.user_id, AuditAction.create, AuditEntityType.feedback, fb_guide.feedback_id, "scenario-feedback-sg-v1", {"status": fb_guide.status.value})
+        get_audit(db, engineer.user_id, AuditAction.upload, AuditEntityType.model_version, guide_v2_row.version_id, "scenario-upload-sg-v2", {"project": guide.name, "version": 2})
+        get_audit(db, vendor.user_id, AuditAction.create, AuditEntityType.report, supplier_quote_report.report_id, "scenario-report-sg-quote", {"report_type": supplier_quote_report.report_type})
+        get_audit(db, engineer.user_id, AuditAction.change_material, AuditEntityType.material, cobalt_chrome.material_id, "scenario-material-cocr", {"material": cobalt_chrome.name, "usage": "future high-load implant option"})
 
         db.commit()
         print("Scenario seed complete.")
@@ -458,7 +520,7 @@ def main():
         print("  engineer.chen@ruichengbio.example / engineer1234")
         print("  doctor.lin@hospital.example / doctor1234")
         print("  vendor.wu@supplier.example / vendor1234")
-        print(f"Projects updated: {mandible.name}, {cranial.name}")
+        print(f"Projects updated: {mandible.name}, {cranial.name}, {guide.name}")
     finally:
         db.close()
 

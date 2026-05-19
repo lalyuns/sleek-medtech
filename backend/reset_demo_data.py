@@ -19,7 +19,7 @@ from seed_scenario import main as seed_scenario
 from seed_product_catalog import seed_product_catalog
 
 
-SCENARIO_CODES = ("MR-2026-041", "CM-2026-017")
+SCENARIO_CODES = ("MR-2026-041", "CM-2026-017", "SG-2026-009")
 
 
 def reset_demo_data() -> dict:
@@ -29,7 +29,11 @@ def reset_demo_data() -> dict:
         scenario_project_ids = [
             row[0]
             for row in db.query(Project.project_id)
-            .filter(Project.name.like("%MR-2026-041%") | Project.name.like("%CM-2026-017%"))
+            .filter(
+                Project.name.like("%MR-2026-041%")
+                | Project.name.like("%CM-2026-017%")
+                | Project.name.like("%SG-2026-009%")
+            )
             .all()
         ]
         placeholder_project_ids = [
