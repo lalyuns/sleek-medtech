@@ -94,6 +94,10 @@ def _product_detail(db: Session, product: Product) -> ProductDetailOut:
         name=product.name,
         sku=product.sku,
         description=product.description,
+        body_region=product.body_region,
+        clinical_use=product.clinical_use,
+        surgical_stage=product.surgical_stage,
+        indication=product.indication,
         status=product.status.value,
         is_public=product.is_public,
         created_at=product.created_at,
@@ -117,6 +121,10 @@ def public_catalog(db: Session = Depends(get_db)):
             name=detail.name,
             sku=detail.sku,
             description=detail.description,
+            body_region=detail.body_region,
+            clinical_use=detail.clinical_use,
+            surgical_stage=detail.surgical_stage,
+            indication=detail.indication,
             bom_items=[
                 PublicComponentOut(
                     name=item.component.name,
@@ -166,6 +174,10 @@ def create_product(body: ProductCreate, db: Session = Depends(get_db), _: User =
         name=body.name,
         sku=body.sku,
         description=body.description,
+        body_region=body.body_region,
+        clinical_use=body.clinical_use,
+        surgical_stage=body.surgical_stage,
+        indication=body.indication,
         status=_parse_enum(ProductStatus, body.status, "product status"),
         is_public=body.is_public,
     )
@@ -189,6 +201,14 @@ def update_product(product_id: int, body: ProductUpdate, db: Session = Depends(g
         product.name = body.name
     if body.description is not None:
         product.description = body.description
+    if body.body_region is not None:
+        product.body_region = body.body_region
+    if body.clinical_use is not None:
+        product.clinical_use = body.clinical_use
+    if body.surgical_stage is not None:
+        product.surgical_stage = body.surgical_stage
+    if body.indication is not None:
+        product.indication = body.indication
     if body.status is not None:
         product.status = _parse_enum(ProductStatus, body.status, "product status")
     if body.is_public is not None:

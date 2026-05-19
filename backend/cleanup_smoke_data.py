@@ -6,6 +6,7 @@ from app.database import SessionLocal
 from app.models.feedback import Feedback
 from app.models.material import Material
 from app.models.model_version import ModelVersion
+from app.models.product import Product
 from app.models.project import Project
 from app.models.reference_edge import ReferenceEdge
 from app.models.report import Report
@@ -34,6 +35,7 @@ def cleanup_smoke_data() -> dict:
             "model_versions": 0,
             "projects": 0,
             "materials": 0,
+            "products": 0,
         }
 
         if version_ids:
@@ -64,6 +66,11 @@ def cleanup_smoke_data() -> dict:
             material.is_active = False
             material.deleted_at = datetime.utcnow()
             deleted["materials"] += 1
+
+        for product in db.query(Product).filter(Product.name.like("Smoke Product%")).all():
+            product.is_deleted = True
+            product.deleted_at = datetime.utcnow()
+            deleted["products"] += 1
 
         db.commit()
         return deleted

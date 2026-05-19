@@ -70,6 +70,7 @@ export default function ProductCatalogPage() {
                 >
                   <strong>{product.name}</strong>
                   <span>{product.sku}</span>
+                  {product.body_region && <span>{product.body_region}</span>}
                   <p>{product.description}</p>
                 </button>
               ))}
@@ -81,6 +82,14 @@ export default function ProductCatalogPage() {
               <h2>{selectedProduct?.name || '產品內容'}</h2>
               <span>{selectedProduct?.bom_items?.length || 0} 件組成</span>
             </div>
+            {selectedProduct && (
+              <div className="ops-context-grid">
+                <div><span>使用部位</span><strong>{selectedProduct.body_region || '未設定'}</strong></div>
+                <div><span>臨床用途</span><strong>{selectedProduct.clinical_use || '未設定'}</strong></div>
+                <div><span>使用階段</span><strong>{selectedProduct.surgical_stage || '未設定'}</strong></div>
+                <div><span>適應症</span><strong>{selectedProduct.indication || '未設定'}</strong></div>
+              </div>
+            )}
             <div className="ops-table-wrap">
               <table className="ops-table">
                 <thead>

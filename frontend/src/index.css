@@ -204,6 +204,33 @@ button {
   grid-template-columns: minmax(180px, 1.4fr) 100px 100px minmax(180px, 1fr) auto;
 }
 
+.ops-context-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 14px 18px;
+  border-bottom: 1px solid #e5ebf3;
+  background: #f8fafc;
+}
+
+.ops-context-grid div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ops-context-grid span {
+  color: #66758f;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.ops-context-grid strong {
+  color: #172033;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
 .ops-main {
   width: min(1240px, calc(100vw - 48px));
   margin: 0 auto;
@@ -599,7 +626,8 @@ button {
   .product-admin-grid,
   .catalog-request-form,
   .two-col,
-  .bom-add-row {
+  .bom-add-row,
+  .ops-context-grid {
     grid-template-columns: 1fr;
   }
 

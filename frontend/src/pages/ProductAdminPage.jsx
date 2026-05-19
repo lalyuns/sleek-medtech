@@ -23,7 +23,15 @@ export default function ProductAdminPage() {
   const [components, setComponents] = useState([])
   const [requests, setRequests] = useState([])
   const [selectedProductId, setSelectedProductId] = useState('')
-  const [productForm, setProductForm] = useState({ name: '', sku: '', description: '' })
+  const [productForm, setProductForm] = useState({
+    name: '',
+    sku: '',
+    description: '',
+    body_region: '',
+    clinical_use: '',
+    surgical_stage: '',
+    indication: '',
+  })
   const [componentForm, setComponentForm] = useState({ name: '', part_number: '', source_type: 'purchased', unit: 'pcs', supplier_name: '', unit_cost: '', lead_time_days: '', is_critical: false, requires_certificate: false })
   const [bomForm, setBomForm] = useState({ component_id: '', quantity: 1, unit: 'pcs', note: '' })
   const navigate = useNavigate()
@@ -56,7 +64,7 @@ export default function ProductAdminPage() {
   const createProduct = async (event) => {
     event.preventDefault()
     await api.post('/products', { ...productForm, is_public: true, status: 'active' })
-    setProductForm({ name: '', sku: '', description: '' })
+    setProductForm({ name: '', sku: '', description: '', body_region: '', clinical_use: '', surgical_stage: '', indication: '' })
     await refresh()
   }
 
@@ -113,7 +121,13 @@ export default function ProductAdminPage() {
             <h2>新增產品</h2>
             <input required value={productForm.name} onChange={(event) => setProductForm((value) => ({ ...value, name: event.target.value }))} placeholder="產品名稱" />
             <input required value={productForm.sku} onChange={(event) => setProductForm((value) => ({ ...value, sku: event.target.value }))} placeholder="SKU / 型號" />
+            <div className="two-col">
+              <input value={productForm.body_region} onChange={(event) => setProductForm((value) => ({ ...value, body_region: event.target.value }))} placeholder="使用部位，例如下顎骨" />
+              <input value={productForm.surgical_stage} onChange={(event) => setProductForm((value) => ({ ...value, surgical_stage: event.target.value }))} placeholder="使用階段，例如術中固定" />
+            </div>
+            <input value={productForm.clinical_use} onChange={(event) => setProductForm((value) => ({ ...value, clinical_use: event.target.value }))} placeholder="臨床用途" />
             <textarea value={productForm.description} onChange={(event) => setProductForm((value) => ({ ...value, description: event.target.value }))} placeholder="對外描述" />
+            <textarea value={productForm.indication} onChange={(event) => setProductForm((value) => ({ ...value, indication: event.target.value }))} placeholder="適應症 / 使用情境" />
             <button className="ops-primary">新增產品</button>
           </form>
 
@@ -142,6 +156,14 @@ export default function ProductAdminPage() {
               {products.map((product) => <option key={product.product_id} value={product.product_id}>{product.name}</option>)}
             </select>
           </div>
+          {selectedProduct && (
+            <div className="ops-context-grid">
+              <div><span>使用部位</span><strong>{selectedProduct.body_region || '未設定'}</strong></div>
+              <div><span>臨床用途</span><strong>{selectedProduct.clinical_use || '未設定'}</strong></div>
+              <div><span>使用階段</span><strong>{selectedProduct.surgical_stage || '未設定'}</strong></div>
+              <div><span>適應症</span><strong>{selectedProduct.indication || '未設定'}</strong></div>
+            </div>
+          )}
           <form className="bom-add-row" onSubmit={addBomItem}>
             <select required value={bomForm.component_id} onChange={(event) => setBomForm((value) => ({ ...value, component_id: event.target.value }))}>
               <option value="">選擇組件</option>

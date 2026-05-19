@@ -39,6 +39,14 @@ export default function BOMPanel({ projectId, versionId }) {
   if (!bom) return <p style={{ color: '#64748b', fontSize: 13 }}>尚無 BOM 資料。</p>
 
   const unitPriceLabel = UNIT_PRICE_LABELS[bom.unit_price_unit] || bom.unit_price_unit || '每克'
+  const productRows = [
+    { label: '器材', value: bom.product?.name || '未綁定器材' },
+    { label: '使用部位', value: bom.product?.body_region || '未設定' },
+    { label: '臨床用途', value: bom.product?.clinical_use || '未設定' },
+    { label: '使用階段', value: bom.product?.surgical_stage || '未設定' },
+    { label: '專案版本', value: bom.version ? `v${bom.version.version_number} / ${bom.version.status}` : `#${bom.version_id}` },
+    { label: '適應症/情境', value: bom.product?.indication || '未設定' },
+  ]
   const rows = [
     { label: '材料', value: bom.material_name },
     { label: 'STL 體積', value: bom.volume != null ? `${bom.volume.toFixed(2)} mm³` : '待解析' },
@@ -53,6 +61,18 @@ export default function BOMPanel({ projectId, versionId }) {
 
   return (
     <div style={{ display: 'grid', gap: 14 }}>
+      <div style={contextPanelStyle}>
+        <div style={{ color: '#172033', fontWeight: 900, fontSize: 13, marginBottom: 8 }}>器材用途與版本關聯</div>
+        <div style={{ display: 'grid', gap: 7 }}>
+          {productRows.map(({ label, value }) => (
+            <div key={label} style={{ display: 'grid', gridTemplateColumns: '78px 1fr', gap: 10, alignItems: 'start', fontSize: 12 }}>
+              <span style={{ color: '#66758f', fontWeight: 800 }}>{label}</span>
+              <span style={{ color: '#172033', lineHeight: 1.45 }}>{value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: 8 }}>
         <input
           type="number"
@@ -118,4 +138,11 @@ const fieldStyle = {
   background: '#f8fafc',
   color: '#172033',
   fontSize: 12,
+}
+
+const contextPanelStyle = {
+  padding: 12,
+  borderRadius: 8,
+  background: '#f8fafc',
+  border: '1px solid #dbe3ef',
 }

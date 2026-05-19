@@ -20,8 +20,28 @@ class CostOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class BOMProductContext(BaseModel):
+    product_id: int
+    name: str
+    sku: str
+    description: Optional[str] = None
+    body_region: Optional[str] = None
+    clinical_use: Optional[str] = None
+    surgical_stage: Optional[str] = None
+    indication: Optional[str] = None
+
+
+class BOMVersionContext(BaseModel):
+    version_id: int
+    version_number: int
+    status: str
+    description: Optional[str] = None
+
+
 class BOMOut(BaseModel):
     version_id: int
+    product: Optional[BOMProductContext] = None
+    version: BOMVersionContext
     material_name: str
     volume: Optional[float]
     volume_unit: str = "mm3"

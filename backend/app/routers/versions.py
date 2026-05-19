@@ -11,12 +11,14 @@ from app.models.cost import Cost
 from app.models.feedback import Feedback
 from app.models.material import Material
 from app.models.model_version import ModelVersion, VersionStatus
+from app.models.product import Product
+from app.models.project import Project
 from app.models.reference_edge import ReferenceEdge, TargetType
 from app.models.report import Report
 from app.models.user import User, UserRole
 from app.models.user_project_mapping import AccessLevel
 from app.storage import signed_object_url
-from app.schemas.cost import BOMOut, CostOut
+from app.schemas.cost import BOMOut, BOMProductContext, BOMVersionContext, CostOut
 from app.schemas.reference_edge import ReferenceEdgeCreate, ReferenceEdgeOut, TraceabilityOut, TraceEdge, TraceNode
 from app.schemas.version import VersionLockRequest, VersionOut
 
@@ -166,6 +168,13 @@ def list_references(
 
 def _build_bom(project_id: int, version_id: int, db: Session) -> BOMOut:
     version = _get_version_or_404(version_id, project_id, db)
+    project = db.query(Project).filter(Project.project_id == project_id, Project.is_deleted == False).first()
+    product = None
+    if project and project.product_id:
+        product = db.query(Product).filter(
+            Product.product_id == project.product_id,
+            Product.is_deleted == False,
+        ).first()
     material = db.query(Material).filter(
         Material.material_id == version.material_id,
         Material.is_deleted == False,
@@ -190,6 +199,25 @@ def _build_bom(project_id: int, version_id: int, db: Session) -> BOMOut:
 
     return BOMOut(
         version_id=version_id,
+        product=(
+            BOMProductContext(
+                product_id=product.product_id,
+                name=product.name,
+                sku=product.sku,
+                description=product.description,
+                body_region=product.body_region,
+                clinical_use=product.clinical_use,
+                surgical_stage=product.surgical_stage,
+                indication=product.indication,
+            )
+            if product else None
+        ),
+        version=BOMVersionContext(
+            version_id=version.version_id,
+            version_number=version.version_number,
+            status=version.status.value,
+            description=version.description,
+        ),
         material_name=material.name,
         volume=version.volume,
         volume_unit="mm3",

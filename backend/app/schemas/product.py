@@ -27,6 +27,10 @@ class ProductCreate(BaseModel):
     name: str
     sku: str
     description: Optional[str] = None
+    body_region: Optional[str] = None
+    clinical_use: Optional[str] = None
+    surgical_stage: Optional[str] = None
+    indication: Optional[str] = None
     status: str = "active"
     is_public: bool = True
 
@@ -35,6 +39,10 @@ class ProductUpdate(BaseModel):
     name: Optional[str] = None
     sku: Optional[str] = None
     description: Optional[str] = None
+    body_region: Optional[str] = None
+    clinical_use: Optional[str] = None
+    surgical_stage: Optional[str] = None
+    indication: Optional[str] = None
     status: Optional[str] = None
     is_public: Optional[bool] = None
 
@@ -84,6 +92,10 @@ class PublicProductOut(BaseModel):
     name: str
     sku: str
     description: Optional[str]
+    body_region: Optional[str] = None
+    clinical_use: Optional[str] = None
+    surgical_stage: Optional[str] = None
+    indication: Optional[str] = None
     bom_items: List[PublicComponentOut] = Field(default_factory=list)
 
 

@@ -639,6 +639,19 @@ function ProductBOMTable({ product }) {
         </div>
         <div style={{ color: '#137447', fontWeight: 900 }}>組件估算 ${componentCost.toFixed(2)}</div>
       </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10, marginBottom: 12 }}>
+        {[
+          ['使用部位', product.body_region || '未設定'],
+          ['臨床用途', product.clinical_use || '未設定'],
+          ['使用階段', product.surgical_stage || '未設定'],
+          ['適應症', product.indication || '未設定'],
+        ].map(([label, value]) => (
+          <div key={label} style={{ padding: 10, borderRadius: 8, background: '#f8fafc', border: '1px solid #dbe3ef' }}>
+            <div style={{ color: '#66758f', fontSize: 11, fontWeight: 900, marginBottom: 4 }}>{label}</div>
+            <div style={{ color: '#172033', fontSize: 13, fontWeight: 800, lineHeight: 1.4 }}>{value}</div>
+          </div>
+        ))}
+      </div>
       <div className="ops-table-wrap">
         <table className="ops-table">
           <thead>

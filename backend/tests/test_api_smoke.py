@@ -71,12 +71,28 @@ def test_api_smoke_flow():
     assert all(item["is_active"] for item in materials_response.json())
     assert all(item["name"] != "Smoke Ti Inactive Pytest" for item in materials_response.json())
 
+    product_response = client.post("/api/v1/products", headers=headers, json={
+        "name": "Smoke Product Pytest",
+        "sku": "SMOKE-PRODUCT-PYTEST",
+        "description": "pytest clinical product context",
+        "body_region": "口腔顎面 / 下顎骨",
+        "clinical_use": "下顎骨缺損重建與固定",
+        "surgical_stage": "術中固定、術後支撐",
+        "indication": "pytest indication",
+        "status": "active",
+        "is_public": True,
+    })
+    assert product_response.status_code == 201, product_response.text
+    product = product_response.json()
+
     project_response = client.post("/api/v1/projects/", headers=headers, json={
         "name": "Smoke Project Pytest",
         "description": "pytest smoke test",
+        "product_id": product["product_id"],
     })
     assert project_response.status_code == 201, project_response.text
     project = project_response.json()
+    assert project["product_id"] == product["product_id"]
 
     upload_init_response = client.post(
         f"/api/v1/projects/{project['project_id']}/versions/upload/init",
@@ -114,6 +130,9 @@ def test_api_smoke_flow():
     assert bom["material_quantity"] == pytest.approx(0.0443)
     assert bom["unit_price_unit"] == "per_g"
     assert bom["total_cost"] == pytest.approx(19.935)
+    assert bom["product"]["body_region"] == "口腔顎面 / 下顎骨"
+    assert bom["product"]["clinical_use"] == "下顎骨缺損重建與固定"
+    assert bom["version"]["version_number"] == version["version_number"]
 
     feedback_response = client.post(
         f"/api/v1/projects/{project['project_id']}/versions/{version['version_id']}/feedbacks",

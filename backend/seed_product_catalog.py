@@ -21,7 +21,7 @@ def upsert_component(db, name, part_number, source_type, unit, supplier_name=Non
     return component
 
 
-def upsert_product(db, name, sku, description, is_public=True):
+def upsert_product(db, name, sku, description, body_region=None, clinical_use=None, surgical_stage=None, indication=None, is_public=True):
     product = db.query(Product).filter(Product.sku == sku, Product.is_deleted == False).first()
     if not product:
         product = Product(name=name, sku=sku, description=description)
@@ -29,6 +29,10 @@ def upsert_product(db, name, sku, description, is_public=True):
         db.flush()
     product.name = name
     product.description = description
+    product.body_region = body_region
+    product.clinical_use = clinical_use
+    product.surgical_stage = surgical_stage
+    product.indication = indication
     product.status = ProductStatus.active
     product.is_public = is_public
     product.is_deleted = False
@@ -126,6 +130,10 @@ def seed_product_catalog():
             "下顎重建固定板套組",
             "KIT-MR-2026",
             "含客製主固定板、骨釘、定位導板、滅菌包材與可追溯文件的套組。",
+            body_region="口腔顎面 / 下顎骨",
+            clinical_use="下顎骨缺損重建與固定",
+            surgical_stage="術中固定、術後支撐",
+            indication="腫瘤切除、創傷或先天缺損後的下顎骨重建情境。",
         )
         upsert_bom_item(db, mandible_set, plate, 1, "pcs", "由 STL 版本與醫師簽核建立。", 10)
         upsert_bom_item(db, mandible_set, screw, 6, "pcs", "依手術規劃可調整數量，外購批號需追溯。", 20)
@@ -161,6 +169,10 @@ def seed_product_catalog():
             "顱骨修補網片套組",
             "KIT-CM-2026",
             "含修補網片、微型固定螺釘與交付文件的標準追溯套組。",
+            body_region="顱顏 / 顱骨缺損區",
+            clinical_use="顱骨缺損覆蓋與修補",
+            surgical_stage="術中覆蓋固定、術後保護",
+            indication="外傷或術後顱骨缺損，需要客製化鈦網貼合與固定的情境。",
         )
         upsert_bom_item(db, cranial_set, mesh, 1, "pcs", "依版本模型製作。", 10)
         upsert_bom_item(db, cranial_set, screw_small, 8, "pcs", "外購，可依醫師需求調整數量。", 20)
