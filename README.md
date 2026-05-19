@@ -5,8 +5,6 @@
 - 內部專案追溯：STL 模型版本、材料、醫師回饋、報告、BOM 成本、簽核與稽核紀錄。
 - 產品與套組管理：公開產品型錄、內部產品/組件/BOM 管理、外部需求申請，以及專案連結產品套組與器材使用部位。
 
-完整規格請看 [規格書.md](規格書.md)。
-
 ## 環境建置
 
 本專案支援 Docker Compose 一鍵建置。從 GitHub clone 專案後，只需安裝 Docker Desktop、複製 `.env.example` 為 `.env`，即可啟動完整前端、後端、MySQL、Redis 與 MinIO 服務；demo 測資可透過一行 reset 指令建立。
