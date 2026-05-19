@@ -27,9 +27,9 @@ Accounts:
   engineer.chen@ruichengbio.example / engineer1234
   doctor.lin@hospital.example / doctor1234
   vendor.wu@supplier.example / vendor1234
-Projects updated: 下顎重建固定板 MR-2026-041, 顱骨修補網片 CM-2026-017
+Projects updated: 下顎重建固定板 MR-2026-041, 顱骨修補網片 CM-2026-017, 術前切割導板 SG-2026-009
 Product catalog seed complete.
-{'scenario_projects': 3, 'scenario_versions': 4, 'product_requests': 0}`
+{'scenario_projects': 3, 'scenario_versions': 5, 'product_requests': 5}`
 
 async function isServerReady() {
   try {
@@ -140,6 +140,11 @@ async function openProjectByCode(page, code) {
   await page.getByRole('button', { name: '3D 檢視' }).waitFor()
 }
 
+async function openProjectTab(page, tabName, headingName) {
+  await page.getByRole('button', { name: tabName }).click()
+  await page.getByRole('heading', { name: headingName, exact: true }).waitFor()
+}
+
 async function main() {
   await fs.mkdir(assetsDir, { recursive: true })
   const server = await ensureVite()
@@ -158,12 +163,14 @@ async function main() {
     await publicPage.goto(`${baseURL}/catalog`)
     await publicPage.getByRole('heading', { name: '可申請產品' }).waitFor()
     await publicPage.getByText('下顎重建固定板套組').first().waitFor()
+    await publicPage.getByText('術前切割導板套組').first().waitFor()
+    await publicPage.locator('.catalog-product').filter({ hasText: '術前切割導板套組' }).click()
     await screenshot(publicPage, '02-public-catalog.png')
     await publicPage.getByPlaceholder('申請人姓名').fill('王小明')
     await publicPage.getByPlaceholder('單位/公司').fill('示範醫院')
     await publicPage.getByPlaceholder('Email').fill('demo.requester@example.com')
     await publicPage.getByPlaceholder('電話').fill('02-1234-5678')
-    await publicPage.getByPlaceholder('規格、交期或補充說明').fill('Demo 申請：請協助評估下顎重建固定板套組。')
+    await publicPage.getByPlaceholder('規格、交期或補充說明').fill('Demo 申請：請協助評估術前切割導板套組，並確認 PEEK 試作與鑽孔導引套交期。')
     await publicPage.getByRole('button', { name: '送出申請' }).click()
     await publicPage.getByText('已收到申請').waitFor()
     await screenshot(publicPage, '03-public-request-result.png')
@@ -194,10 +201,22 @@ async function main() {
     await admin.page.goto(`${baseURL}/admin/audit`)
     await admin.page.getByRole('heading', { name: '稽核紀錄' }).waitFor()
     await screenshot(admin.page, '10-admin-audit.png')
+    await openProjectByCode(admin.page, 'SG-2026-009')
+    await screenshot(admin.page, '16-admin-project-overview.png')
+    await openProjectTab(admin.page, '報告', '報告')
+    await admin.page.getByText('供應商 PEEK 試作報價摘要').waitFor()
+    await screenshot(admin.page, '17-admin-project-reports.png')
+    await openProjectTab(admin.page, '成員', '成員')
+    await admin.page.locator('strong').filter({ hasText: '陳研發工程師' }).waitFor()
+    await screenshot(admin.page, '18-admin-project-members.png')
+    await admin.page.goto(admin.page.url().replace(/\/projects\/\d+$/, (match) => `${match}/traceability`))
+    await admin.page.getByText('/ 溯源圖').waitFor()
+    await admin.page.locator('.react-flow__node').first().waitFor()
+    await screenshot(admin.page, '19-admin-traceability.png')
     await admin.context.close()
 
     const engineer = await login(browser, 'engineer.chen@ruichengbio.example', 'engineer1234')
-    await openProjectByCode(engineer.page, 'CM-2026-017')
+    await openProjectByCode(engineer.page, 'SG-2026-009')
     await engineer.page.getByRole('button', { name: '上傳' }).click()
     await engineer.page.getByRole('heading', { name: '上傳 STL 版本' }).waitFor()
     await screenshot(engineer.page, '11-engineer-upload.png')
