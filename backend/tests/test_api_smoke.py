@@ -85,6 +85,14 @@ def test_api_smoke_flow():
     assert product_response.status_code == 201, product_response.text
     product = product_response.json()
 
+    catalog_search_response = client.get("/api/v1/catalog/products?q=下顎")
+    assert catalog_search_response.status_code == 200, catalog_search_response.text
+    assert any(item["product_id"] == product["product_id"] for item in catalog_search_response.json())
+
+    catalog_region_response = client.get("/api/v1/catalog/products?body_region=口腔顎面")
+    assert catalog_region_response.status_code == 200, catalog_region_response.text
+    assert any(item["product_id"] == product["product_id"] for item in catalog_region_response.json())
+
     project_response = client.post("/api/v1/projects/", headers=headers, json={
         "name": "Smoke Project Pytest",
         "description": "pytest smoke test",

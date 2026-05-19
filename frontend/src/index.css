@@ -102,6 +102,65 @@ button {
   padding: 18px;
 }
 
+.catalog-filter-panel {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(260px, 1fr);
+  gap: 12px 18px;
+  align-items: center;
+}
+
+.catalog-filter-panel strong,
+.catalog-filter-panel span {
+  display: block;
+}
+
+.catalog-filter-panel strong {
+  color: #172033;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.catalog-filter-panel span {
+  color: #66758f;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.catalog-filter-panel input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #d2dbe8;
+  border-radius: 7px;
+  background: #f8fafc;
+  color: #172033;
+  padding: 10px 12px;
+}
+
+.catalog-filter-row {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.catalog-filter-chip {
+  min-height: 28px;
+  border: 1px solid #c7d5ea;
+  border-radius: 999px;
+  background: #fff;
+  color: #2856c8;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+  text-align: left;
+}
+
+.catalog-filter-chip.active {
+  background: #e8efff;
+  border-color: #8fb4ff;
+}
+
 .catalog-grid .ops-table {
   min-width: 620px;
 }
@@ -624,6 +683,7 @@ button {
   .admin-inline-form.users,
   .catalog-grid,
   .product-admin-grid,
+  .catalog-filter-panel,
   .catalog-request-form,
   .two-col,
   .bom-add-row,

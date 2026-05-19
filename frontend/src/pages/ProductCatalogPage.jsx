@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import api from '../api/client'
 
 const SOURCE_LABELS = {
@@ -11,15 +11,27 @@ const SOURCE_LABELS = {
 export default function ProductCatalogPage() {
   const [products, setProducts] = useState([])
   const [selectedId, setSelectedId] = useState('')
+  const [filters, setFilters] = useState({ q: '', body_region: '', clinical_use: '', indication: '' })
   const [form, setForm] = useState({ requester_name: '', organization: '', email: '', phone: '', quantity: 1, message: '' })
   const [submitted, setSubmitted] = useState(false)
 
-  useEffect(() => {
-    api.get('/catalog/products').then((response) => {
-      setProducts(response.data)
-      if (response.data[0]) setSelectedId(String(response.data[0].product_id))
+  const loadProducts = useCallback(async () => {
+    const params = new URLSearchParams()
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value.trim()) params.set(key, value.trim())
     })
-  }, [])
+    const query = params.toString()
+    const response = await api.get(`/catalog/products${query ? `?${query}` : ''}`)
+    setProducts(response.data)
+    setSelectedId((current) => {
+      if (response.data.some((product) => String(product.product_id) === String(current))) return current
+      return response.data[0] ? String(response.data[0].product_id) : ''
+    })
+  }, [filters])
+
+  useEffect(() => {
+    Promise.resolve().then(() => loadProducts())
+  }, [loadProducts])
 
   const selectedProduct = useMemo(
     () => products.find((product) => String(product.product_id) === String(selectedId)),
@@ -36,6 +48,16 @@ export default function ProductCatalogPage() {
     setSubmitted(true)
     setForm({ requester_name: '', organization: '', email: '', phone: '', quantity: 1, message: '' })
   }
+
+  const setCatalogFilter = (field, value) => {
+    setFilters((current) => ({ ...current, [field]: value || '' }))
+  }
+
+  const clearFilters = () => {
+    setFilters({ q: '', body_region: '', clinical_use: '', indication: '' })
+  }
+
+  const hasActiveFilter = Object.values(filters).some((value) => value.trim())
 
   return (
     <div className="ops-page">
@@ -55,13 +77,28 @@ export default function ProductCatalogPage() {
           <p>外部使用者可查看套組內容並送出需求；正式報價、文件與權限會由內部審核後開通。</p>
         </section>
 
+        <section className="ops-panel catalog-filter-panel">
+          <div>
+            <strong>器材查詢</strong>
+            <span>依使用部位、臨床用途或適應症快速找出相關醫材。</span>
+          </div>
+          <input value={filters.q} onChange={(event) => setCatalogFilter('q', event.target.value)} placeholder="搜尋下顎、重建、術中固定..." />
+          <div className="catalog-filter-row">
+            {filters.body_region && <button type="button" className="catalog-filter-chip active" onClick={() => setCatalogFilter('body_region', '')}>部位：{filters.body_region}</button>}
+            {filters.clinical_use && <button type="button" className="catalog-filter-chip active" onClick={() => setCatalogFilter('clinical_use', '')}>用途：{filters.clinical_use}</button>}
+            {filters.indication && <button type="button" className="catalog-filter-chip active" onClick={() => setCatalogFilter('indication', '')}>情境：{filters.indication}</button>}
+            {hasActiveFilter && <button type="button" className="catalog-filter-chip" onClick={clearFilters}>清除篩選</button>}
+          </div>
+        </section>
+
         <section className="catalog-grid">
           <div className="ops-table-panel">
             <div className="ops-section-heading">
               <h2>產品與組件</h2>
-              <span>{products.length} 項</span>
+              <span>{products.length} 件結果</span>
             </div>
             <div className="catalog-products">
+              {products.length === 0 && <div className="ops-empty">找不到符合條件的器材。</div>}
               {products.map((product) => (
                 <button
                   key={product.product_id}
@@ -84,10 +121,10 @@ export default function ProductCatalogPage() {
             </div>
             {selectedProduct && (
               <div className="ops-context-grid">
-                <div><span>使用部位</span><strong>{selectedProduct.body_region || '未設定'}</strong></div>
-                <div><span>臨床用途</span><strong>{selectedProduct.clinical_use || '未設定'}</strong></div>
+                <div><span>使用部位</span><strong>{selectedProduct.body_region || '未設定'}</strong>{selectedProduct.body_region && <button type="button" className="catalog-filter-chip" onClick={() => setCatalogFilter('body_region', selectedProduct.body_region)}>查相同部位</button>}</div>
+                <div><span>臨床用途</span><strong>{selectedProduct.clinical_use || '未設定'}</strong>{selectedProduct.clinical_use && <button type="button" className="catalog-filter-chip" onClick={() => setCatalogFilter('clinical_use', selectedProduct.clinical_use)}>查相似用途</button>}</div>
                 <div><span>使用階段</span><strong>{selectedProduct.surgical_stage || '未設定'}</strong></div>
-                <div><span>適應症</span><strong>{selectedProduct.indication || '未設定'}</strong></div>
+                <div><span>適應症</span><strong>{selectedProduct.indication || '未設定'}</strong>{selectedProduct.indication && <button type="button" className="catalog-filter-chip" onClick={() => setCatalogFilter('indication', selectedProduct.indication)}>查相似情境</button>}</div>
               </div>
             )}
             <div className="ops-table-wrap">

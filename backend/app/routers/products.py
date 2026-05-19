@@ -1,7 +1,8 @@
 from datetime import datetime
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -106,13 +107,36 @@ def _product_detail(db: Session, product: Product) -> ProductDetailOut:
 
 
 @router.get("/catalog/products", response_model=List[PublicProductOut])
-def public_catalog(db: Session = Depends(get_db)):
-    products = (
-        db.query(Product)
-        .filter(Product.status == ProductStatus.active, Product.is_public == True, Product.is_deleted == False)
-        .order_by(Product.product_id)
-        .all()
+def public_catalog(
+    q: str | None = Query(default=None),
+    body_region: str | None = Query(default=None),
+    clinical_use: str | None = Query(default=None),
+    indication: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+):
+    query = db.query(Product).filter(
+        Product.status == ProductStatus.active,
+        Product.is_public == True,
+        Product.is_deleted == False,
     )
+    if q:
+        pattern = f"%{q.strip()}%"
+        query = query.filter(or_(
+            Product.name.like(pattern),
+            Product.sku.like(pattern),
+            Product.description.like(pattern),
+            Product.body_region.like(pattern),
+            Product.clinical_use.like(pattern),
+            Product.surgical_stage.like(pattern),
+            Product.indication.like(pattern),
+        ))
+    if body_region:
+        query = query.filter(Product.body_region.like(f"%{body_region.strip()}%"))
+    if clinical_use:
+        query = query.filter(Product.clinical_use.like(f"%{clinical_use.strip()}%"))
+    if indication:
+        query = query.filter(Product.indication.like(f"%{indication.strip()}%"))
+    products = query.order_by(Product.product_id).all()
     output = []
     for product in products:
         detail = _product_detail(db, product)

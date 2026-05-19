@@ -57,6 +57,7 @@ def cleanup_smoke_data() -> dict:
                 deleted["reports"] += 1
 
             for project in db.query(Project).filter(Project.project_id.in_(project_ids)).all():
+                project.product_id = None
                 project.is_deleted = True
                 project.deleted_at = datetime.utcnow()
                 deleted["projects"] += 1
@@ -67,10 +68,9 @@ def cleanup_smoke_data() -> dict:
             material.deleted_at = datetime.utcnow()
             deleted["materials"] += 1
 
-        for product in db.query(Product).filter(Product.name.like("Smoke Product%")).all():
-            product.is_deleted = True
-            product.deleted_at = datetime.utcnow()
-            deleted["products"] += 1
+        db.flush()
+        result = db.execute(delete(Product).where(Product.name.like("Smoke Product%")))
+        deleted["products"] = result.rowcount or 0
 
         db.commit()
         return deleted
