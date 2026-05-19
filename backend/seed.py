@@ -5,13 +5,13 @@ from passlib.context import CryptContext
 db = SessionLocal()
 pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-existing = db.query(User).filter(User.email == "admin@sleek.com").first()
+existing = db.query(User).filter(User.email == "admin@ruichengbio.example").first()
 if existing:
     print("Admin user already exists, id:", existing.user_id)
 else:
     user = User(
         name="Admin",
-        email="admin@sleek.com",
+        email="admin@ruichengbio.example",
         hashed_password=pwd.hash("admin1234"),
         role=UserRole.admin,
     )

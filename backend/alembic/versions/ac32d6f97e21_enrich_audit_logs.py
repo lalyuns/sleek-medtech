@@ -18,11 +18,17 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column("audit_logs", sa.Column("ip_address", sa.String(length=64), nullable=True))
-    op.add_column("audit_logs", sa.Column("user_agent", sa.String(length=500), nullable=True))
-    op.add_column("audit_logs", sa.Column("request_id", sa.String(length=100), nullable=True))
-    op.add_column("audit_logs", sa.Column("old_values", sa.JSON(), nullable=True))
-    op.add_column("audit_logs", sa.Column("new_values", sa.JSON(), nullable=True))
+    existing_columns = {column["name"] for column in sa.inspect(op.get_bind()).get_columns("audit_logs")}
+    columns = [
+        ("ip_address", sa.Column("ip_address", sa.String(length=64), nullable=True)),
+        ("user_agent", sa.Column("user_agent", sa.String(length=500), nullable=True)),
+        ("request_id", sa.Column("request_id", sa.String(length=100), nullable=True)),
+        ("old_values", sa.Column("old_values", sa.JSON(), nullable=True)),
+        ("new_values", sa.Column("new_values", sa.JSON(), nullable=True)),
+    ]
+    for name, column in columns:
+        if name not in existing_columns:
+            op.add_column("audit_logs", column)
 
 
 def downgrade() -> None:

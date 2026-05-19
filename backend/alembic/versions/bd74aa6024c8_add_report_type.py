@@ -18,8 +18,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column("reports", sa.Column("report_type", sa.String(length=100), nullable=False, server_default="material_test"))
-    op.alter_column("reports", "report_type", server_default=None)
+    existing_columns = {column["name"] for column in sa.inspect(op.get_bind()).get_columns("reports")}
+    if "report_type" not in existing_columns:
+        op.add_column("reports", sa.Column("report_type", sa.String(length=100), nullable=False, server_default="material_test"))
+        op.alter_column("reports", "report_type", server_default=None)
 
 
 def downgrade() -> None:

@@ -21,4 +21,5 @@ class Project(Base, SoftDeleteMixin):
         SAEnum(ProjectStatus), default=ProjectStatus.active, nullable=False
     )
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.user_id"), nullable=False)
+    product_id: Mapped[Optional[int]] = mapped_column(ForeignKey("products.product_id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

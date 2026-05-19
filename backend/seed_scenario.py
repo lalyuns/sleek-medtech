@@ -201,6 +201,7 @@ def get_material(db, name, parameters):
 def get_project(db, code, fallback_name, description, owner_id):
     project = db.query(Project).filter(Project.name.like(f"%{code}%")).first()
     if project:
+        project.name = fallback_name
         project.description = description
         project.status = ProjectStatus.active
         project.is_deleted = False
@@ -356,10 +357,10 @@ def main():
 
     db = SessionLocal()
     try:
-        admin = get_user(db, "admin@sleek.com", "System Admin", UserRole.admin, "admin1234")
-        engineer = get_user(db, "engineer.chen@sleek.com", "Chen R&D Engineer", UserRole.engineer, "engineer1234")
-        doctor = get_user(db, "doctor.lin@hospital.example", "Dr. Lin", UserRole.doctor, "doctor1234")
-        vendor = get_user(db, "vendor.wu@supplier.example", "Wu Manufacturing Vendor", UserRole.vendor, "vendor1234")
+        admin = get_user(db, "admin@ruichengbio.example", "系統管理員", UserRole.admin, "admin1234")
+        engineer = get_user(db, "engineer.chen@ruichengbio.example", "陳研發工程師", UserRole.engineer, "engineer1234")
+        doctor = get_user(db, "doctor.lin@hospital.example", "林醫師", UserRole.doctor, "doctor1234")
+        vendor = get_user(db, "vendor.wu@supplier.example", "吳製造廠商", UserRole.vendor, "vendor1234")
 
         ti64 = get_material(db, "Titanium Ti-6Al-4V ELI", {
             "density": 4.43,
@@ -390,15 +391,15 @@ def main():
         mandible = get_project(
             db,
             "MR-2026-041",
-            "Mandibular reconstruction plate MR-2026-041",
-            "Patient-specific mandibular reconstruction plate with STL versions, clinical feedback, material evidence, and BOM costs.",
+            "下顎重建固定板 MR-2026-041",
+            "病患客製下顎重建固定板，包含 STL 版本、臨床回饋、材料證明與 BOM 成本。",
             admin.user_id,
         )
         cranial = get_project(
             db,
             "CM-2026-017",
-            "Cranial repair mesh CM-2026-017",
-            "Cranial repair mesh used to validate multi-project review, read-only vendor access, and report archiving.",
+            "顱骨修補網片 CM-2026-017",
+            "顱骨修補網片，用於展示多專案審閱、廠商唯讀權限與報告歸檔。",
             admin.user_id,
         )
 
@@ -408,12 +409,12 @@ def main():
             upsert_mapping(db, doctor.user_id, project.project_id, AccessLevel.read_only)
             upsert_mapping(db, vendor.user_id, project.project_id, AccessLevel.read_only)
 
-        mandible_v1_row = get_version(db, mandible.project_id, engineer.user_id, ti64.material_id, 1, "Initial six-hole mandibular plate contour from CT planning.", 520.0, mandible_v1, hash_v1, VersionStatus.locked)
-        mandible_v2_row = get_version(db, mandible.project_id, engineer.user_id, ti64.material_id, 2, "Seven-hole curved plate with reduced posterior edge thickness and wider screw clearance.", 610.0, mandible_v2, hash_v2, VersionStatus.draft)
-        cranial_v1_row = get_version(db, cranial.project_id, engineer.user_id, steel.material_id, 1, "Oval cranial mesh lattice for manufacturing quote and sterilization evidence.", 840.0, cranial_v1, hash_cranial, VersionStatus.locked)
+        mandible_v1_row = get_version(db, mandible.project_id, engineer.user_id, ti64.material_id, 1, "依 CT 規劃建立的初版六孔下顎固定板輪廓。", 520.0, mandible_v1, hash_v1, VersionStatus.locked)
+        mandible_v2_row = get_version(db, mandible.project_id, engineer.user_id, ti64.material_id, 2, "七孔彎曲固定板，後緣厚度降低並加大螺孔裕度。", 610.0, mandible_v2, hash_v2, VersionStatus.draft)
+        cranial_v1_row = get_version(db, cranial.project_id, engineer.user_id, steel.material_id, 1, "橢圓顱骨網片格柵，用於製造報價與滅菌證明。", 840.0, cranial_v1, hash_cranial, VersionStatus.locked)
         for version, reason in [
-            (mandible_v1_row, "Clinical review accepted initial contour before v2 refinement."),
-            (cranial_v1_row, "Cranial mesh fit accepted for manufacturing quote package."),
+            (mandible_v1_row, "臨床審閱接受初版輪廓，後續進入 v2 細修。"),
+            (cranial_v1_row, "顱骨網片貼合度已接受，可進入製造報價包。"),
         ]:
             version.signed_off_by = doctor.user_id
             version.signed_off_at = version.signed_off_at or datetime.utcnow()
@@ -425,12 +426,12 @@ def main():
                 "role": doctor.role.value,
             }
 
-        fb_edge = get_feedback(db, mandible_v1_row.version_id, doctor.user_id, "Posterior edge is too close to the nerve canal; please reduce thickness by 1 mm.", {"x": 22.0, "y": -5.0, "z": 0.9}, converted=True)
-        fb_screw = get_feedback(db, mandible_v2_row.version_id, doctor.user_id, "Screw hole clearance looks acceptable; keep this as the sign-off candidate.", {"x": 12.0, "y": 2.0, "z": 0.8})
+        fb_edge = get_feedback(db, mandible_v1_row.version_id, doctor.user_id, "後緣太接近神經管，請將厚度降低 1 mm。", {"x": 22.0, "y": -5.0, "z": 0.9}, converted=True)
+        fb_screw = get_feedback(db, mandible_v2_row.version_id, doctor.user_id, "螺孔裕度看起來可接受，請以此版作為簽核候選。", {"x": 12.0, "y": 2.0, "z": 0.8})
 
-        material_report = get_report(db, mandible.project_id, vendor.user_id, "TI64 lot TI64-2026-041 material certificate", "material_test", report_material_url)
-        bio_report = get_report(db, mandible.project_id, engineer.user_id, "ISO 10993 biocompatibility summary", "compliance", report_bio_url)
-        sterile_report = get_report(db, cranial.project_id, engineer.user_id, "Steam sterilization validation record", "sterilization", report_sterile_url)
+        material_report = get_report(db, mandible.project_id, vendor.user_id, "TI64 批號 TI64-2026-041 材料證明", "material_test", report_material_url)
+        bio_report = get_report(db, mandible.project_id, engineer.user_id, "ISO 10993 生物相容性摘要", "compliance", report_bio_url)
+        sterile_report = get_report(db, cranial.project_id, engineer.user_id, "蒸氣滅菌確效紀錄", "sterilization", report_sterile_url)
 
         upsert_edge(db, mandible_v2_row.version_id, TargetType.old_version, mandible_v1_row.version_id)
         upsert_edge(db, mandible_v2_row.version_id, TargetType.feedback, fb_edge.feedback_id)
@@ -439,10 +440,10 @@ def main():
         upsert_edge(db, mandible_v2_row.version_id, TargetType.report, bio_report.report_id)
         upsert_edge(db, cranial_v1_row.version_id, TargetType.report, sterile_report.report_id)
 
-        get_cost(db, mandible.project_id, CostType.labor, 4200, "R&D contour adjustment and DFM review")
-        get_cost(db, mandible.project_id, CostType.external_sample, 12800, "Vendor titanium sample print and post-processing")
-        get_cost(db, cranial.project_id, CostType.labor, 2600, "Mesh fitting review")
-        get_cost(db, cranial.project_id, CostType.external_sample, 7600, "316L prototype quotation sample")
+        get_cost(db, mandible.project_id, CostType.labor, 4200, "研發輪廓調整與 DFM 檢討")
+        get_cost(db, mandible.project_id, CostType.external_sample, 12800, "鈦合金樣件列印與後處理")
+        get_cost(db, cranial.project_id, CostType.labor, 2600, "網片貼合檢討")
+        get_cost(db, cranial.project_id, CostType.external_sample, 7600, "316L 原型報價樣件")
 
         get_audit(db, engineer.user_id, AuditAction.upload, AuditEntityType.model_version, mandible_v1_row.version_id, "scenario-upload-mr-v1", {"project": mandible.name, "version": 1})
         get_audit(db, doctor.user_id, AuditAction.sign_off, AuditEntityType.model_version, mandible_v1_row.version_id, "scenario-signoff-mr-v1", {"status": "locked"})
@@ -453,8 +454,8 @@ def main():
         db.commit()
         print("Scenario seed complete.")
         print("Accounts:")
-        print("  admin@sleek.com / admin1234")
-        print("  engineer.chen@sleek.com / engineer1234")
+        print("  admin@ruichengbio.example / admin1234")
+        print("  engineer.chen@ruichengbio.example / engineer1234")
         print("  doctor.lin@hospital.example / doctor1234")
         print("  vendor.wu@supplier.example / vendor1234")
         print(f"Projects updated: {mandible.name}, {cranial.name}")

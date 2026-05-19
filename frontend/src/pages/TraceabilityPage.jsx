@@ -16,13 +16,10 @@ const REPORT_TYPE_LABELS = {
 }
 
 const KIND_META = {
-  model_version: { label: '模型版本', color: '#3b82f6', row: 0 },
-  feedback: { label: '醫師回饋', color: '#22c55e', row: 1 },
-  report: { label: '報告文件', color: '#facc15', row: 2 },
+  model_version: { label: '模型版本', color: '#2f63e6', row: 0 },
+  feedback: { label: '醫師回饋', color: '#17a978', row: 1 },
+  report: { label: '報告文件', color: '#f5a70a', row: 2 },
 }
-
-const REACT_FLOW_NODE_TYPES = {}
-const REACT_FLOW_EDGE_TYPES = {}
 
 function versionNumber(node) {
   const match = String(node.data?.label || '').match(/v(\d+)/i)
@@ -92,10 +89,10 @@ function layoutGraph(traceData) {
         padding: 0,
         minWidth: node.data?.kind === 'model_version' ? 230 : 250,
         maxWidth: 280,
-        background: node.style?.background,
-        border: node.style?.border,
-        color: '#f8fafc',
-        boxShadow: '0 16px 34px rgba(2, 6, 23, 0.25)',
+        background: '#fff',
+        border: `1px solid ${meta.color}`,
+        color: '#172033',
+        boxShadow: '0 10px 26px rgba(23, 32, 51, 0.12)',
       },
     }
   })
@@ -113,8 +110,8 @@ function layoutGraph(traceData) {
         strokeWidth: isVersionEdge ? 2.5 : 2,
         strokeDasharray: edge.label === 'report' ? '8 7' : undefined,
       },
-      labelStyle: { fontSize: 11, fill: '#e2e8f0', fontWeight: 800 },
-      labelBgStyle: { fill: '#0f172a', fillOpacity: 0.92 },
+      labelStyle: { fontSize: 11, fill: '#324156', fontWeight: 800 },
+      labelBgStyle: { fill: '#f8fafc', fillOpacity: 0.95 },
       pathOptions: { offset: 32 + index * 8 },
     }
   })
@@ -132,23 +129,23 @@ function TraceNode({ data, meta }) {
       <div style={{ fontWeight: 900, fontSize: 16, marginTop: 5 }}>{data.label}</div>
       {isVersion && (
         <>
-          <div style={{ color: '#cbd5e1', fontSize: 12, marginTop: 4 }}>{STATUS_LABELS[data.status] || data.status}</div>
-          <div style={{ color: '#94a3b8', fontSize: 11, marginTop: 4 }}>{formatDate(data.timestamp)}</div>
-          <div style={{ color: signoffName ? '#86efac' : '#fbbf24', fontSize: 11, marginTop: 4 }}>
+          <div style={{ color: '#324156', fontSize: 12, marginTop: 4 }}>{STATUS_LABELS[data.status] || data.status}</div>
+          <div style={{ color: '#66758f', fontSize: 11, marginTop: 4 }}>{formatDate(data.timestamp)}</div>
+          <div style={{ color: signoffName ? '#137447' : '#a44b00', fontSize: 11, marginTop: 4 }}>
             {signoffName ? `簽核：${signoffName}` : '尚未簽核'}
           </div>
         </>
       )}
       {data.kind === 'feedback' && (
         <>
-          <div style={{ color: '#cbd5e1', fontSize: 12, marginTop: 5 }}>{compactText(data.content, 58)}</div>
-          <div style={{ color: '#94a3b8', fontSize: 11, marginTop: 5 }}>{FEEDBACK_STATUS_LABELS[data.status] || data.status}</div>
+          <div style={{ color: '#324156', fontSize: 12, marginTop: 5 }}>{compactText(data.content, 58)}</div>
+          <div style={{ color: '#66758f', fontSize: 11, marginTop: 5 }}>{FEEDBACK_STATUS_LABELS[data.status] || data.status}</div>
         </>
       )}
       {isReport && (
         <>
-          <div style={{ color: '#cbd5e1', fontSize: 12, marginTop: 5 }}>{REPORT_TYPE_LABELS[data.report_type] || data.report_type || '未分類'}</div>
-          <div style={{ color: '#94a3b8', fontSize: 11, marginTop: 5 }}>{formatDate(data.created_at)}</div>
+          <div style={{ color: '#324156', fontSize: 12, marginTop: 5 }}>{REPORT_TYPE_LABELS[data.report_type] || data.report_type || '未分類'}</div>
+          <div style={{ color: '#66758f', fontSize: 11, marginTop: 5 }}>{formatDate(data.created_at)}</div>
         </>
       )}
     </div>
@@ -190,12 +187,12 @@ export default function TraceabilityPage() {
   }), [nodes])
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#0f172a', color: '#f1f5f9' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 24px', borderBottom: '1px solid #1e293b' }}>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#f3f6fa', color: '#172033' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 24px', borderBottom: '1px solid #dbe3ef', background: '#fff' }}>
         <button onClick={() => navigate(`/projects/${id}`)} style={secondaryButton}>返回</button>
         <div>
           <h2 style={{ margin: 0 }}>{project?.name || `專案 #${id}`} / 溯源圖</h2>
-          <div style={{ color: '#94a3b8', fontSize: 12, marginTop: 3 }}>
+          <div style={{ color: '#66758f', fontSize: 12, marginTop: 3 }}>
             版本脈絡、醫師回饋、報告證據與簽核資訊
           </div>
         </div>
@@ -203,7 +200,7 @@ export default function TraceabilityPage() {
           <select
             value={selectedVersionId || ''}
             onChange={(event) => setSelectedVersionId(Number(event.target.value))}
-            style={{ marginLeft: 'auto', padding: '8px 12px', borderRadius: 6, border: '1px solid #334155', background: '#1e293b', color: '#f1f5f9' }}
+            style={{ marginLeft: 'auto', padding: '8px 12px', borderRadius: 6, border: '1px solid #d2dbe8', background: '#f8fafc', color: '#172033' }}
           >
             {versions.map((version) => (
               <option key={version.version_id} value={version.version_id}>
@@ -224,38 +221,36 @@ export default function TraceabilityPage() {
             <ReactFlow
               nodes={nodes}
               edges={edges}
-              nodeTypes={REACT_FLOW_NODE_TYPES}
-              edgeTypes={REACT_FLOW_EDGE_TYPES}
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
               onNodeClick={(_, node) => setSelectedNode(node)}
               fitView
               fitViewOptions={{ padding: 0.2 }}
               minZoom={0.25}
-              style={{ background: '#0f172a' }}
+              style={{ background: '#f8fafc' }}
             >
-              <Background color="#1e293b" gap={20} />
+              <Background color="#d7e0eb" gap={20} />
               <Controls />
               <MiniMap
                 nodeColor={(node) => (KIND_META[node.data?.kind] || KIND_META.model_version).color}
-                style={{ background: '#1e293b' }}
+                style={{ background: '#fff', border: '1px solid #dbe3ef' }}
               />
             </ReactFlow>
           )}
         </div>
 
-        <aside style={{ borderLeft: '1px solid #1e293b', background: '#111827', padding: 18, overflow: 'auto' }}>
+        <aside style={{ borderLeft: '1px solid #dbe3ef', background: '#fff', padding: 18, overflow: 'auto' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 18 }}>
-            <MiniStat label="版本" value={summary.versions} color="#93c5fd" />
-            <MiniStat label="回饋" value={summary.feedbacks} color="#86efac" />
-            <MiniStat label="報告" value={summary.reports} color="#fde68a" />
+            <MiniStat label="版本" value={summary.versions} color="#2f63e6" />
+            <MiniStat label="回饋" value={summary.feedbacks} color="#137447" />
+            <MiniStat label="報告" value={summary.reports} color="#a44b00" />
           </div>
           <h3 style={{ margin: '0 0 14px' }}>節點資訊</h3>
           <NodeDetails node={selectedNode} />
-          <div style={{ marginTop: 24, paddingTop: 18, borderTop: '1px solid #334155' }}>
+          <div style={{ marginTop: 24, paddingTop: 18, borderTop: '1px solid #dbe3ef' }}>
             <h4 style={{ margin: '0 0 10px' }}>圖例</h4>
             {Object.entries(KIND_META).map(([kind, meta]) => (
-              <div key={kind} style={{ display: 'flex', alignItems: 'center', gap: 9, color: '#cbd5e1', fontSize: 13, marginBottom: 8 }}>
+              <div key={kind} style={{ display: 'flex', alignItems: 'center', gap: 9, color: '#324156', fontSize: 13, marginBottom: 8 }}>
                 <span style={{ width: 10, height: 10, borderRadius: 999, background: meta.color }} />
                 {meta.label}
               </div>
@@ -269,8 +264,8 @@ export default function TraceabilityPage() {
 
 function MiniStat({ label, value, color }) {
   return (
-    <div style={{ border: '1px solid #334155', borderRadius: 8, padding: 10, background: '#0f172a' }}>
-      <div style={{ color: '#94a3b8', fontSize: 11 }}>{label}</div>
+    <div style={{ border: '1px solid #dbe3ef', borderRadius: 8, padding: 10, background: '#f8fafc' }}>
+      <div style={{ color: '#66758f', fontSize: 11 }}>{label}</div>
       <div style={{ color, fontSize: 20, fontWeight: 900, marginTop: 4 }}>{value}</div>
     </div>
   )
@@ -298,12 +293,12 @@ function NodeDetails({ node }) {
     <div>
       {rows.map(([label, value]) => (
         <div key={label} style={{ marginBottom: 14 }}>
-          <div style={{ color: '#94a3b8', fontSize: 12 }}>{label}</div>
-          <div style={{ color: '#f8fafc', fontSize: 13, wordBreak: label === 'Hash' ? 'break-all' : 'normal', marginTop: 3 }}>{value}</div>
+          <div style={{ color: '#66758f', fontSize: 12 }}>{label}</div>
+          <div style={{ color: '#172033', fontSize: 13, wordBreak: label === 'Hash' ? 'break-all' : 'normal', marginTop: 3 }}>{value}</div>
         </div>
       ))}
       {data.file_url && (
-        <a href={data.file_url} target="_blank" rel="noreferrer" style={{ display: 'inline-block', color: '#93c5fd', fontSize: 13, marginTop: 4 }}>
+        <a href={data.file_url} target="_blank" rel="noreferrer" style={{ display: 'inline-block', color: '#2f63e6', fontSize: 13, marginTop: 4 }}>
           開啟報告檔案
         </a>
       )}
@@ -315,4 +310,4 @@ function translateEdge(label) {
   return ({ 'previous version': '前一版', feedback: '回饋', report: '報告' })[label] || label
 }
 
-const secondaryButton = { padding: '8px 14px', borderRadius: 6, border: 'none', background: '#475569', color: '#fff', cursor: 'pointer' }
+const secondaryButton = { padding: '8px 14px', borderRadius: 6, border: 'none', background: '#5b6b82', color: '#fff', cursor: 'pointer', fontWeight: 800 }

@@ -53,7 +53,7 @@ export default function FeedbackPanel({ projectId, versionId, canWrite = true, c
         ) : feedbacks.map((feedback) => {
           const canChange = canModerate || feedback.author_id === currentUserId
           return (
-            <div key={feedback.feedback_id} style={{ background: '#0f172a', borderRadius: 6, padding: '8px 10px', marginBottom: 8, fontSize: 13 }}>
+            <div key={feedback.feedback_id} style={{ background: '#f8fafc', borderRadius: 6, padding: '8px 10px', marginBottom: 8, fontSize: 13, border: '1px solid #dbe3ef' }}>
               {editingId === feedback.feedback_id ? (
                 <div style={{ display: 'grid', gap: 8 }}>
                   <textarea value={draft} onChange={(event) => setDraft(event.target.value)} style={textAreaStyle} />
@@ -64,15 +64,15 @@ export default function FeedbackPanel({ projectId, versionId, canWrite = true, c
                 </div>
               ) : (
                 <>
-                  <div style={{ color: '#f1f5f9', marginBottom: 4 }}>{feedback.content}</div>
+                  <div style={{ color: '#172033', marginBottom: 4, fontWeight: 700 }}>{feedback.content}</div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
-                    <span style={{ fontSize: 11, color: '#94a3b8' }}>使用者 #{feedback.author_id}</span>
+                    <span style={{ fontSize: 11, color: '#66758f' }}>使用者 #{feedback.author_id}</span>
                     <span style={{ fontSize: 11, color: feedback.status === 'converted' ? '#22c55e' : '#f59e0b' }}>{STATUS_LABELS[feedback.status] || feedback.status}</span>
                   </div>
                   {canChange && (
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
                       <button type="button" onClick={() => { setEditingId(feedback.feedback_id); setDraft(feedback.content) }} style={ghostButton}>編輯</button>
-                      <button type="button" onClick={() => deleteFeedback(feedback.feedback_id)} style={{ ...ghostButton, color: '#fecaca', borderColor: '#7f1d1d' }}>刪除</button>
+                      <button type="button" onClick={() => deleteFeedback(feedback.feedback_id)} style={{ ...ghostButton, color: '#b42318', borderColor: '#ffc7c7', background: '#fff7f7' }}>刪除</button>
                     </div>
                   )}
                 </>
@@ -88,7 +88,7 @@ export default function FeedbackPanel({ projectId, versionId, canWrite = true, c
             onChange={(event) => setContent(event.target.value)}
             placeholder="新增回饋..."
             disabled={!versionId || submitting}
-            style={{ flex: 1, padding: '6px 10px', borderRadius: 6, border: '1px solid #334155', background: '#0f172a', color: '#f1f5f9', fontSize: 12 }}
+            style={{ flex: 1, padding: '6px 10px', borderRadius: 6, border: '1px solid #d2dbe8', background: '#f8fafc', color: '#172033', fontSize: 12 }}
           />
           <button
             type="submit"
@@ -108,16 +108,16 @@ const textAreaStyle = {
   minHeight: 72,
   boxSizing: 'border-box',
   borderRadius: 6,
-  border: '1px solid #334155',
-  background: '#111827',
-  color: '#f8fafc',
+  border: '1px solid #d2dbe8',
+  background: '#fff',
+  color: '#172033',
   padding: 8,
 }
 
 const ghostButton = {
-  border: '1px solid #334155',
-  background: '#111827',
-  color: '#cbd5e1',
+  border: '1px solid #d2dbe8',
+  background: '#fff',
+  color: '#324156',
   borderRadius: 6,
   padding: '5px 9px',
   cursor: 'pointer',

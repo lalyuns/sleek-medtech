@@ -32,6 +32,12 @@ const REPORT_TYPE_LABELS = {
   compliance: '合規文件',
   sterilization: '滅菌文件',
 }
+const SOURCE_LABELS = {
+  self_made: '自製',
+  purchased: '外購',
+  outsourced: '委外',
+  customer_supplied: '客供',
+}
 const REQUIRED_REPORTS = ['material_test', 'inspection', 'compliance']
 const CHUNK_SIZE = 5 * 1024 * 1024
 
@@ -54,10 +60,10 @@ function formatDate(value) {
 
 function Stat({ label, value, tone = '#bfdbfe', note }) {
   return (
-    <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 8, padding: 14 }}>
-      <div style={{ color: '#94a3b8', fontSize: 12, marginBottom: 7 }}>{label}</div>
+    <div style={{ background: '#fff', border: '1px solid #dbe3ef', borderRadius: 8, padding: 14, boxShadow: '0 2px 8px rgba(23, 32, 51, 0.05)' }}>
+      <div style={{ color: '#66758f', fontSize: 12, marginBottom: 7, fontWeight: 800 }}>{label}</div>
       <div style={{ color: tone, fontSize: 24, fontWeight: 900 }}>{value}</div>
-      {note && <div style={{ color: '#64748b', fontSize: 11, marginTop: 6 }}>{note}</div>}
+      {note && <div style={{ color: '#7b889b', fontSize: 11, marginTop: 6 }}>{note}</div>}
     </div>
   )
 }
@@ -65,7 +71,7 @@ function Stat({ label, value, tone = '#bfdbfe', note }) {
 export default function ProjectDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { user } = useAuthStore()
+  const { logout, user } = useAuthStore()
   const [tab, setTab] = useState('Overview')
   const [project, setProject] = useState(null)
   const [versions, setVersions] = useState([])
@@ -73,6 +79,7 @@ export default function ProjectDetailPage() {
   const [reports, setReports] = useState([])
   const [feedbacks, setFeedbacks] = useState([])
   const [bom, setBom] = useState(null)
+  const [projectProduct, setProjectProduct] = useState(null)
   const [activeVersion, setActiveVersion] = useState(null)
   const [locking, setLocking] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -110,14 +117,17 @@ export default function ProjectDetailPage() {
   }, [id])
 
   const refreshWorkspace = useCallback(async () => {
-    const [projectResponse, versionsResponse, materialsResponse, reportsResponse] = await Promise.all([
+    const [projectResponse, versionsResponse, materialsResponse, reportsResponse, productsResponse] = await Promise.all([
       api.get(`/projects/${id}`).catch(() => ({ data: null })),
       api.get(`/projects/${id}/versions`).catch(() => ({ data: [] })),
       api.get('/materials/').catch(() => ({ data: [] })),
       api.get(`/projects/${id}/reports`).catch(() => ({ data: [] })),
+      api.get('/products').catch(() => ({ data: [] })),
     ])
     const versionRows = versionsResponse.data
-    setProject(projectResponse.data)
+    const projectRow = projectResponse.data
+    setProject(projectRow)
+    setProjectProduct(productsResponse.data.find((product) => product.product_id === projectRow?.product_id) || null)
     setVersions(versionRows)
     setMaterials(materialsResponse.data)
     setReports(reportsResponse.data)
@@ -272,20 +282,32 @@ export default function ProjectDetailPage() {
   }
 
   return (
-    <div className="project-detail-page">
-      {statusBanner && <div className={`status-banner ${statusBanner.type}`}>{statusBanner.message}</div>}
+    <>
+      <header className="ops-topbar">
+        <div className="ops-brand">
+          <span className="ops-brand-mark">睿</span>
+          <span>睿程生醫 醫材追溯系統</span>
+        </div>
+        <nav className="ops-nav">
+          <button onClick={() => navigate('/projects')}>專案列表</button>
+          <button onClick={() => navigate(`/projects/${id}/traceability`)}>查看溯源</button>
+          <button onClick={logout}>登出</button>
+        </nav>
+      </header>
+      <div className="project-detail-page">
+        {statusBanner && <div className={`status-banner ${statusBanner.type}`}>{statusBanner.message}</div>}
       <div className="project-detail-header">
         <button onClick={() => navigate('/projects')} style={secondaryButton}>返回</button>
         <div className="project-detail-title">
           <h1 style={{ marginBottom: 4 }}>{project?.name || `專案 #${id}`}</h1>
-          <div style={{ color: '#94a3b8', fontSize: 13 }}>{project?.description || '尚無描述'}</div>
+          <div style={{ color: '#66758f', fontSize: 13, fontWeight: 700 }}>{project?.description || '尚無描述'}</div>
         </div>
         {activeVersion && (
           <span style={{ fontSize: 12, color: STATUS_COLOR[activeVersion.status], border: `1px solid ${STATUS_COLOR[activeVersion.status]}`, borderRadius: 4, padding: '4px 8px' }}>
             v{activeVersion.version_number} / {STATUS_LABELS[activeVersion.status] || activeVersion.status}
           </span>
         )}
-        <button className="project-detail-trace" onClick={() => navigate(`/projects/${id}/traceability`)} style={{ ...primaryButton, background: '#8b5cf6' }}>溯源圖</button>
+        <button className="project-detail-trace" onClick={() => navigate(`/projects/${id}/traceability`)} style={primaryButton}>溯源圖</button>
       </div>
 
       <div className="project-tabs">
@@ -319,10 +341,10 @@ export default function ProjectDetailPage() {
               {recentActivities.length === 0 ? <Empty text="目前沒有活動紀錄。" /> : (
                 <div style={{ display: 'grid', gap: 8 }}>
                   {recentActivities.map((item) => (
-                    <div key={item.key} style={{ border: '1px solid #334155', borderRadius: 8, padding: 10, background: '#0f172a' }}>
-                      <div style={{ color: '#f8fafc', fontWeight: 800, fontSize: 13 }}>{item.title}</div>
-                      <div style={{ color: '#94a3b8', fontSize: 12, marginTop: 4 }}>{item.detail}</div>
-                      <div style={{ color: '#64748b', fontSize: 11, marginTop: 5 }}>{formatDate(item.time)}</div>
+                    <div key={item.key} style={{ border: '1px solid #dbe3ef', borderRadius: 8, padding: 10, background: '#f8fafc' }}>
+                      <div style={{ color: '#172033', fontWeight: 800, fontSize: 13 }}>{item.title}</div>
+                      <div style={{ color: '#66758f', fontSize: 12, marginTop: 4 }}>{item.detail}</div>
+                      <div style={{ color: '#7b889b', fontSize: 11, marginTop: 5 }}>{formatDate(item.time)}</div>
                     </div>
                   ))}
                 </div>
@@ -357,16 +379,16 @@ export default function ProjectDetailPage() {
             <label style={labelStyle}>版本說明</label>
             <input value={uploadForm.description} onChange={(event) => setUploadForm((form) => ({ ...form, description: event.target.value }))} style={fieldStyle} placeholder="這次版本改了什麼？" />
             <label style={labelStyle}>STL 檔案</label>
-            <input type="file" accept=".stl" required onChange={(event) => setUploadForm((form) => ({ ...form, file: event.target.files?.[0] || null }))} style={{ color: '#cbd5e1', marginBottom: 16 }} />
+            <input type="file" accept=".stl" required onChange={(event) => setUploadForm((form) => ({ ...form, file: event.target.files?.[0] || null }))} style={{ color: '#324156', marginBottom: 16 }} />
             {uploading && (
               <div style={{ marginBottom: 14 }}>
-                <div style={{ height: 8, background: '#334155', borderRadius: 999, overflow: 'hidden' }}>
+                <div style={{ height: 8, background: '#d7e0eb', borderRadius: 999, overflow: 'hidden' }}>
                   <div style={{ width: `${uploadProgress}%`, height: 8, background: '#3b82f6' }} />
                 </div>
-                <div style={{ color: '#94a3b8', fontSize: 12, marginTop: 6 }}>{uploadMessage}</div>
+                <div style={{ color: '#66758f', fontSize: 12, marginTop: 6 }}>{uploadMessage}</div>
               </div>
             )}
-            <div style={{ color: canUpload ? '#86efac' : '#fbbf24', fontSize: 12, marginBottom: 10 }}>{uploadDisabledReason}</div>
+            <div style={{ color: canUpload ? '#137447' : '#a44b00', fontSize: 12, marginBottom: 10 }}>{uploadDisabledReason}</div>
             <button disabled={!canUpload} style={{ ...primaryButton, width: '100%', opacity: canUpload ? 1 : 0.55 }}>上傳 STL</button>
           </form>
 
@@ -396,7 +418,7 @@ export default function ProjectDetailPage() {
             <VersionList versions={versions} activeVersion={activeVersion} setActiveVersion={setActiveVersion} />
           </div>
           <div className="project-viewer-frame">
-            <Suspense fallback={<div style={{ display: 'grid', placeItems: 'center', height: '100%', color: '#94a3b8' }}>正在載入 3D 檢視器...</div>}>
+            <Suspense fallback={<div style={{ display: 'grid', placeItems: 'center', height: '100%', color: '#cbd5e1' }}>正在載入 3D 檢視器...</div>}>
               <ModelViewer fileUrl={resolveModelUrl(activeVersion?.file_url)} projectId={id} versionId={activeVersion?.version_id} canWriteFeedback={canWriteFeedback} />
             </Suspense>
           </div>
@@ -415,7 +437,7 @@ export default function ProjectDetailPage() {
               />
             )}
             {canSignOff && activeVersion?.status !== 'locked' && activeVersion?.status !== 'uploading' && (
-              <div style={{ display: 'grid', gap: 8, marginBottom: 14, padding: 10, borderRadius: 8, background: '#0f172a', border: '1px solid #334155' }}>
+              <div style={{ display: 'grid', gap: 8, marginBottom: 14, padding: 10, borderRadius: 8, background: '#f8fafc', border: '1px solid #dbe3ef' }}>
                 <textarea
                   value={signoffForm.reason}
                   onChange={(event) => setSignoffForm((value) => ({ ...value, reason: event.target.value }))}
@@ -447,6 +469,10 @@ export default function ProjectDetailPage() {
             <h2 style={panelTitle}>成本輸入</h2>
             <CostsPanel projectId={id} onChanged={() => setBomNonce((value) => value + 1)} />
           </div>
+          <div style={{ ...panelStyle, gridColumn: '1 / -1' }}>
+            <h2 style={panelTitle}>套組零件 BOM</h2>
+            <ProductBOMTable product={projectProduct} />
+          </div>
         </div>
       )}
 
@@ -470,7 +496,8 @@ export default function ProjectDetailPage() {
           <AuditPanel />
         </div>
       )}
-    </div>
+      </div>
+    </>
   )
 }
 
@@ -479,7 +506,7 @@ function PendingFeedbackEditor({ projectId, versionId, onSaved }) {
   const [text, setText] = useState('')
   if (!pendingPoint) {
     return (
-      <div style={{ marginBottom: 14, padding: 12, borderRadius: 8, background: '#0f172a', border: '1px dashed #334155', color: '#94a3b8', fontSize: 12, lineHeight: 1.5 }}>
+      <div style={{ marginBottom: 14, padding: 12, borderRadius: 8, background: '#f8fafc', border: '1px dashed #cfd9e8', color: '#66758f', fontSize: 12, lineHeight: 1.5 }}>
         在 3D 模型上點選位置後，這裡會開啟註記編輯器；3D 區域只保留定位 pin。
       </div>
     )
@@ -502,10 +529,10 @@ function PendingFeedbackEditor({ projectId, versionId, onSaved }) {
   }
 
   return (
-    <div style={{ display: 'grid', gap: 8, marginBottom: 14, padding: 12, borderRadius: 8, background: '#0f172a', border: '1px solid #3b82f6' }}>
+    <div style={{ display: 'grid', gap: 8, marginBottom: 14, padding: 12, borderRadius: 8, background: '#f8fafc', border: '1px solid #8fb4ff' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
-        <strong style={{ fontSize: 13 }}>新增 3D 註記</strong>
-        <span style={{ color: '#94a3b8', fontSize: 11, whiteSpace: 'nowrap' }}>
+        <strong style={{ fontSize: 13, color: '#172033' }}>新增 3D 註記</strong>
+        <span style={{ color: '#66758f', fontSize: 11, whiteSpace: 'nowrap' }}>
           X {pendingPoint.x.toFixed(1)} / Y {pendingPoint.y.toFixed(1)} / Z {pendingPoint.z.toFixed(1)}
         </span>
       </div>
@@ -521,10 +548,10 @@ function PendingFeedbackEditor({ projectId, versionId, onSaved }) {
         style={{ ...fieldStyle, minHeight: 98, resize: 'vertical', boxSizing: 'border-box' }}
       />
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
-        <span style={{ color: '#94a3b8', fontSize: 11 }}>橘色 pin 會停在你點選的模型座標。</span>
+        <span style={{ color: '#66758f', fontSize: 11 }}>橘色 pin 會停在你點選的模型座標。</span>
         <div style={{ display: 'flex', gap: 8 }}>
           <button type="button" onClick={cancel} style={smallGhostButton}>取消</button>
-          <button type="button" onClick={save} disabled={!text.trim()} style={{ ...smallGhostButton, background: text.trim() ? '#2563eb' : '#334155', borderColor: text.trim() ? '#3b82f6' : '#334155', color: '#fff', fontWeight: 800 }}>儲存</button>
+          <button type="button" onClick={save} disabled={!text.trim()} style={{ ...smallGhostButton, background: text.trim() ? '#2f63e6' : '#d7e0eb', borderColor: text.trim() ? '#2f63e6' : '#d7e0eb', color: text.trim() ? '#fff' : '#5b6b82', fontWeight: 800 }}>儲存</button>
         </div>
       </div>
     </div>
@@ -536,9 +563,9 @@ function TaskList({ tasks }) {
   return (
     <div style={{ display: 'grid', gap: 8 }}>
       {tasks.slice(0, 8).map((task) => (
-        <div key={task.key} style={{ border: '1px solid #334155', borderLeft: `4px solid ${task.tone}`, borderRadius: 8, padding: 10, background: '#0f172a' }}>
-          <div style={{ color: '#f8fafc', fontWeight: 800, fontSize: 13 }}>{task.title}</div>
-          <div style={{ color: '#94a3b8', fontSize: 12, marginTop: 4 }}>{task.detail}</div>
+        <div key={task.key} style={{ border: '1px solid #dbe3ef', borderLeft: `4px solid ${task.tone}`, borderRadius: 8, padding: 10, background: '#f8fafc' }}>
+          <div style={{ color: '#172033', fontWeight: 800, fontSize: 13 }}>{task.title}</div>
+          <div style={{ color: '#66758f', fontSize: 12, marginTop: 4 }}>{task.detail}</div>
         </div>
       ))}
     </div>
@@ -549,13 +576,13 @@ function Checklist({ items }) {
   return (
     <div style={{ display: 'grid', gap: 10 }}>
       {items.map(([label, done, detail]) => (
-        <div key={label} style={{ display: 'grid', gridTemplateColumns: '22px 1fr', gap: 10, alignItems: 'start', padding: 10, borderRadius: 8, background: '#0f172a', border: '1px solid #334155' }}>
-          <span style={{ width: 18, height: 18, borderRadius: 999, display: 'grid', placeItems: 'center', background: done ? '#22c55e' : '#334155', color: done ? '#052e16' : '#cbd5e1', fontSize: 12, fontWeight: 900 }}>
+        <div key={label} style={{ display: 'grid', gridTemplateColumns: '22px 1fr', gap: 10, alignItems: 'start', padding: 10, borderRadius: 8, background: '#f8fafc', border: '1px solid #dbe3ef' }}>
+          <span style={{ width: 18, height: 18, borderRadius: 999, display: 'grid', placeItems: 'center', background: done ? '#17a978' : '#d7e0eb', color: done ? '#fff' : '#5b6b82', fontSize: 12, fontWeight: 900 }}>
             {done ? '✓' : '·'}
           </span>
           <span>
-            <div style={{ color: '#f8fafc', fontWeight: 800, fontSize: 13 }}>{label}</div>
-            <div style={{ color: '#94a3b8', fontSize: 12, marginTop: 3 }}>{detail}</div>
+            <div style={{ color: '#172033', fontWeight: 800, fontSize: 13 }}>{label}</div>
+            <div style={{ color: '#66758f', fontSize: 12, marginTop: 3 }}>{detail}</div>
           </span>
         </div>
       ))}
@@ -576,34 +603,92 @@ function VersionList({ versions, activeVersion, setActiveVersion }) {
             padding: 12,
             borderRadius: 8,
             cursor: 'pointer',
-            color: '#f1f5f9',
-            background: activeVersion?.version_id === version.version_id ? '#1d4ed8' : '#0f172a',
-            border: `1px solid ${STATUS_COLOR[version.status] || '#334155'}`,
+            color: '#172033',
+            background: activeVersion?.version_id === version.version_id ? '#e8efff' : '#f8fafc',
+            border: `1px solid ${activeVersion?.version_id === version.version_id ? '#8fb4ff' : '#dbe3ef'}`,
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
             <strong>v{version.version_number}</strong>
             <span style={{ color: STATUS_COLOR[version.status] }}>{STATUS_LABELS[version.status] || version.status}</span>
           </div>
-          <div style={{ color: '#94a3b8', fontSize: 12, marginTop: 4 }}>{version.description || '尚無描述'}</div>
-          <div style={{ color: '#64748b', fontSize: 11, marginTop: 4 }}>{version.hash_value.slice(0, 10)}...</div>
+          <div style={{ color: '#66758f', fontSize: 12, marginTop: 4 }}>{version.description || '尚無描述'}</div>
+          <div style={{ color: '#7b889b', fontSize: 11, marginTop: 4 }}>{version.hash_value.slice(0, 10)}...</div>
         </button>
       ))}
     </div>
   )
 }
 
-function Empty({ text }) {
-  return <div style={{ color: '#64748b', border: '1px dashed #334155', borderRadius: 8, padding: 18, textAlign: 'center' }}>{text}</div>
+function ProductBOMTable({ product }) {
+  if (!product) {
+    return <Empty text="這個專案尚未連結產品套組，因此只會顯示 STL 材料與額外成本。" />
+  }
+
+  const componentCost = product.bom_items.reduce((sum, item) => {
+    const unitCost = Number(item.component.unit_cost || 0)
+    return sum + unitCost * Number(item.quantity || 0)
+  }, 0)
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 12 }}>
+        <div>
+          <strong style={{ color: '#172033' }}>{product.name}</strong>
+          <div style={{ color: '#66758f', fontSize: 12, marginTop: 3 }}>{product.sku}</div>
+        </div>
+        <div style={{ color: '#137447', fontWeight: 900 }}>組件估算 ${componentCost.toFixed(2)}</div>
+      </div>
+      <div className="ops-table-wrap">
+        <table className="ops-table">
+          <thead>
+            <tr>
+              <th>組件</th>
+              <th>來源</th>
+              <th>數量</th>
+              <th>供應商/委外廠</th>
+              <th>單價</th>
+              <th>小計</th>
+              <th>文件</th>
+            </tr>
+          </thead>
+          <tbody>
+            {product.bom_items.map((item) => {
+              const unitCost = Number(item.component.unit_cost || 0)
+              const subtotal = unitCost * Number(item.quantity || 0)
+              return (
+                <tr key={item.item_id}>
+                  <td>
+                    {item.component.name}
+                    {item.note && <div className="ops-muted">{item.note}</div>}
+                  </td>
+                  <td><span className={`ops-status ${item.component.source_type === 'self_made' ? 'info' : 'warning'}`}>{SOURCE_LABELS[item.component.source_type] || item.component.source_type}</span></td>
+                  <td>{item.quantity} {item.unit}</td>
+                  <td>{item.component.supplier_name || '-'}</td>
+                  <td>{unitCost ? `$${unitCost.toFixed(2)}` : '-'}</td>
+                  <td>{subtotal ? `$${subtotal.toFixed(2)}` : '-'}</td>
+                  <td>{item.component.requires_certificate ? '需文件' : '不需文件'}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
 }
 
-const panelStyle = { background: '#1e293b', border: '1px solid #334155', borderRadius: 8, padding: 18 }
-const panelTitle = { fontSize: 18, marginBottom: 14 }
-const labelStyle = { display: 'block', color: '#94a3b8', fontSize: 12, marginBottom: 6, marginTop: 12 }
-const fieldStyle = { width: '100%', padding: '9px 10px', borderRadius: 6, border: '1px solid #334155', background: '#0f172a', color: '#f1f5f9' }
-const noticeStyle = { border: '1px solid #334155', borderRadius: 8, padding: 10, background: '#0f172a', color: '#93c5fd', fontSize: 12, lineHeight: 1.5, marginBottom: 12 }
-const primaryButton = { padding: '8px 14px', borderRadius: 6, border: 'none', background: '#3b82f6', color: '#fff', cursor: 'pointer', fontWeight: 700 }
-const secondaryButton = { padding: '8px 14px', borderRadius: 6, border: 'none', background: '#475569', color: '#fff', cursor: 'pointer' }
-const tabButton = { padding: '8px 12px', borderRadius: 6, border: '1px solid #334155', background: '#1e293b', color: '#cbd5e1', cursor: 'pointer' }
-const activeTabButton = { ...tabButton, background: '#2563eb', color: '#fff', border: '1px solid #60a5fa' }
-const smallGhostButton = { border: '1px solid #334155', background: '#0f172a', color: '#cbd5e1', borderRadius: 6, padding: '6px 10px', cursor: 'pointer', fontSize: 12 }
+function Empty({ text }) {
+  return <div style={{ color: '#66758f', border: '1px dashed #cfd9e8', borderRadius: 8, padding: 18, textAlign: 'center', background: '#f8fafc' }}>{text}</div>
+}
+
+const panelStyle = { background: '#fff', border: '1px solid #dbe3ef', borderRadius: 8, padding: 18, boxShadow: '0 2px 9px rgba(23, 32, 51, 0.05)' }
+const panelTitle = { fontSize: 18, marginBottom: 14, color: '#172033' }
+const labelStyle = { display: 'block', color: '#66758f', fontSize: 12, marginBottom: 6, marginTop: 12, fontWeight: 800 }
+const fieldStyle = { width: '100%', padding: '9px 10px', borderRadius: 6, border: '1px solid #d2dbe8', background: '#f8fafc', color: '#172033' }
+const noticeStyle = { border: '1px solid #c9dafc', borderRadius: 8, padding: 10, background: '#edf4ff', color: '#2856c8', fontSize: 12, lineHeight: 1.5, marginBottom: 12 }
+const primaryButton = { padding: '8px 14px', borderRadius: 6, border: 'none', background: '#2f63e6', color: '#fff', cursor: 'pointer', fontWeight: 800 }
+const secondaryButton = { padding: '8px 14px', borderRadius: 6, border: 'none', background: '#5b6b82', color: '#fff', cursor: 'pointer', fontWeight: 800 }
+const tabButton = { padding: '8px 12px', borderRadius: 6, border: '1px solid transparent', background: '#f4f6fa', color: '#324156', cursor: 'pointer', fontWeight: 800 }
+const activeTabButton = { ...tabButton, background: '#5d70e6', color: '#fff', border: '1px solid #5d70e6' }
+const smallGhostButton = { border: '1px solid #d2dbe8', background: '#fff', color: '#324156', borderRadius: 6, padding: '6px 10px', cursor: 'pointer', fontSize: 12 }

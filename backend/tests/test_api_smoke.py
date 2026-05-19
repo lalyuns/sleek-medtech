@@ -19,11 +19,11 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 def ensure_admin():
     db = SessionLocal()
     try:
-        user = db.query(User).filter(User.email == "admin@sleek.com", User.is_deleted == False).first()
+        user = db.query(User).filter(User.email == "admin@ruichengbio.example", User.is_deleted == False).first()
         if not user:
             db.add(User(
                 name="Admin",
-                email="admin@sleek.com",
+                email="admin@ruichengbio.example",
                 hashed_password=pwd_context.hash("admin1234"),
                 role=UserRole.admin,
             ))
@@ -34,7 +34,7 @@ def ensure_admin():
 
 def auth_headers():
     ensure_admin()
-    response = client.post("/api/v1/auth/login", json={"email": "admin@sleek.com", "password": "admin1234"})
+    response = client.post("/api/v1/auth/login", json={"email": "admin@ruichengbio.example", "password": "admin1234"})
     assert response.status_code == 200, response.text
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}, response.json()["refresh_token"]

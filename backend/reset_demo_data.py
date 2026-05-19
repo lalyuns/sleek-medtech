@@ -9,18 +9,21 @@ from app.models.feedback import Feedback
 from app.models.material import Material
 from app.models.model_version import ModelVersion
 from app.models.project import Project
+from app.models.product import ProductRequest
 from app.models.reference_edge import ReferenceEdge
 from app.models.report import Report
+from app.models.user import User
 from app.models.user_project_mapping import UserProjectMapping
 from cleanup_smoke_data import cleanup_smoke_data
 from seed_scenario import main as seed_scenario
+from seed_product_catalog import seed_product_catalog
 
 
 SCENARIO_CODES = ("MR-2026-041", "CM-2026-017")
 
 
 def reset_demo_data() -> dict:
-    deleted = {"smoke": cleanup_smoke_data(), "scenario_projects": 0, "scenario_versions": 0}
+    deleted = {"smoke": cleanup_smoke_data(), "scenario_projects": 0, "scenario_versions": 0, "product_requests": 0}
     db = SessionLocal()
     try:
         scenario_project_ids = [
@@ -64,6 +67,25 @@ def reset_demo_data() -> dict:
                 deleted["scenario_projects"] += 1
             db.execute(delete(AuditLog).where(AuditLog.request_id.like("scenario-%")))
 
+        result = db.execute(delete(ProductRequest))
+        deleted["product_requests"] = result.rowcount or 0
+
+        current_demo_users = {
+            "系統管理員": "admin@ruichengbio.example",
+            "陳研發工程師": "engineer.chen@ruichengbio.example",
+            "林醫師": "doctor.lin@hospital.example",
+            "吳製造廠商": "vendor.wu@supplier.example",
+        }
+        legacy_demo_names = ("System Admin", "Chen R&D Engineer", "Dr. Lin", "Wu Manufacturing Vendor")
+        current_demo_emails = set(current_demo_users.values())
+        for legacy_user in db.query(User).filter(User.name.in_(legacy_demo_names), User.email.notin_(current_demo_emails)).all():
+            legacy_user.is_deleted = True
+            legacy_user.deleted_at = datetime.utcnow()
+        for name, current_email in current_demo_users.items():
+            for legacy_user in db.query(User).filter(User.name == name, User.email != current_email).all():
+                legacy_user.is_deleted = True
+                legacy_user.deleted_at = datetime.utcnow()
+
         for material in db.query(Material).filter(
             Material.name.in_(["Titanium Ti-6Al-4V ELI", "Medical stainless steel 316L", "Medical grade PEEK"])
         ).all():
@@ -79,6 +101,7 @@ def reset_demo_data() -> dict:
         db.close()
 
     seed_scenario()
+    seed_product_catalog()
     return deleted
 
 

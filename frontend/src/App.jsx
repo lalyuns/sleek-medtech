@@ -6,6 +6,8 @@ const LoginPage = lazy(() => import('./pages/LoginPage'))
 const ProjectsPage = lazy(() => import('./pages/ProjectsPage'))
 const ProjectDetailPage = lazy(() => import('./pages/ProjectDetailPage'))
 const TraceabilityPage = lazy(() => import('./pages/TraceabilityPage'))
+const ProductCatalogPage = lazy(() => import('./pages/ProductCatalogPage'))
+const ProductAdminPage = lazy(() => import('./pages/ProductAdminPage'))
 const AdminMaterialsPage = lazy(() => import('./pages/AdminMaterialsPage'))
 const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage'))
 const AdminAuditPage = lazy(() => import('./pages/AdminAuditPage'))
@@ -21,7 +23,9 @@ export default function App() {
       <Suspense fallback={<PageLoading />}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/catalog" element={<ProductCatalogPage />} />
           <Route path="/projects" element={<PrivateRoute><ProjectsPage /></PrivateRoute>} />
+          <Route path="/product-admin" element={<PrivateRoute><ProductAdminPage /></PrivateRoute>} />
           <Route path="/projects/:id" element={<PrivateRoute><ProjectDetailPage /></PrivateRoute>} />
           <Route path="/projects/:id/traceability" element={<PrivateRoute><TraceabilityPage /></PrivateRoute>} />
           <Route path="/admin/materials" element={<PrivateRoute><AdminMaterialsPage /></PrivateRoute>} />
@@ -36,7 +40,7 @@ export default function App() {
 
 function PageLoading() {
   return (
-    <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#0f172a', color: '#94a3b8' }}>
+    <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#f3f6fa', color: '#66758f', fontWeight: 800 }}>
       Loading...
     </div>
   )

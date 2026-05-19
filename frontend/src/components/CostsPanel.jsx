@@ -41,10 +41,10 @@ export default function CostsPanel({ projectId, onChanged }) {
       </form>
       <div style={{ display: 'grid', gap: 8 }}>
         {costs.length === 0 ? <p style={{ color: '#64748b' }}>目前沒有額外成本。</p> : costs.map((cost) => (
-          <div key={cost.cost_id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: 12, padding: 10, background: '#0f172a', borderRadius: 8, border: '1px solid #334155' }}>
+          <div key={cost.cost_id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: 12, padding: 10, background: '#f8fafc', borderRadius: 8, border: '1px solid #dbe3ef', color: '#172033' }}>
             <span>{COST_LABELS[cost.type] || cost.type}</span>
             <strong>${Number(cost.amount).toFixed(2)}</strong>
-            <span style={{ color: '#94a3b8' }}>{cost.description || '尚無說明'}</span>
+            <span style={{ color: '#66758f' }}>{cost.description || '尚無說明'}</span>
           </div>
         ))}
       </div>
@@ -52,5 +52,5 @@ export default function CostsPanel({ projectId, onChanged }) {
   )
 }
 
-const fieldStyle = { padding: '8px 10px', borderRadius: 6, border: '1px solid #334155', background: '#0f172a', color: '#f1f5f9' }
-const buttonStyle = { padding: '8px 14px', borderRadius: 6, border: 'none', background: '#3b82f6', color: '#fff', cursor: 'pointer' }
+const fieldStyle = { minWidth: 0, padding: '8px 10px', borderRadius: 6, border: '1px solid #d2dbe8', background: '#f8fafc', color: '#172033' }
+const buttonStyle = { padding: '8px 14px', borderRadius: 6, border: 'none', background: '#2f63e6', color: '#fff', cursor: 'pointer', fontWeight: 800 }

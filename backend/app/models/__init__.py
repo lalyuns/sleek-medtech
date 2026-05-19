@@ -9,8 +9,10 @@ from .report import Report
 from .reference_edge import ReferenceEdge
 from .cost import Cost
 from .audit_log import AuditLog
+from .product import Component, Product, ProductBOMItem, ProductRequest
 
 __all__ = [
     "Base", "User", "Material", "Project", "UserProjectMapping",
     "ModelVersion", "Feedback", "Report", "ReferenceEdge", "Cost", "AuditLog",
+    "Product", "Component", "ProductBOMItem", "ProductRequest",
 ]

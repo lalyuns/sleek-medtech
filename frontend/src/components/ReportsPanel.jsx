@@ -98,7 +98,7 @@ export default function ReportsPanel({ projectId, versionId }) {
           <select value={reportType} onChange={(event) => setReportType(event.target.value)} style={fieldStyle}>
             {REPORT_TYPES.filter(([value]) => value !== 'all').map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select>
-          <input type="file" onChange={(event) => setFile(event.target.files?.[0] || null)} style={{ color: '#94a3b8', fontSize: 12 }} />
+          <input type="file" onChange={(event) => setFile(event.target.files?.[0] || null)} style={{ color: '#324156', fontSize: 12 }} />
           <button disabled={submitting || !name.trim() || !file} style={{ padding: '8px 12px', borderRadius: 6, border: 'none', background: '#3b82f6', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 700, opacity: submitting || !name.trim() || !file ? 0.55 : 1 }}>
             上傳報告
           </button>
@@ -111,7 +111,7 @@ export default function ReportsPanel({ projectId, versionId }) {
         </div>
 
         {missingRequired.length > 0 && (
-          <div style={{ padding: 10, borderRadius: 8, border: '1px solid #7f1d1d', background: '#190b12', color: '#fecaca', fontSize: 12, lineHeight: 1.5, marginBottom: 12 }}>
+          <div style={{ padding: 10, borderRadius: 8, border: '1px solid #ffc7c7', background: '#fff7f7', color: '#b42318', fontSize: 12, lineHeight: 1.5, marginBottom: 12 }}>
             缺少必備文件：{missingRequired.map(typeLabel).join('、')}
           </div>
         )}
@@ -126,25 +126,25 @@ export default function ReportsPanel({ projectId, versionId }) {
         {filteredReports.length === 0 ? (
           <p style={{ color: '#475569', fontSize: 13 }}>這個分類目前沒有報告。</p>
         ) : filteredReports.map((report) => (
-          <div key={report.report_id} style={{ display: 'grid', gap: 8, marginBottom: 8, padding: 10, background: preview?.report_id === report.report_id ? '#172554' : '#0f172a', borderRadius: 6, border: '1px solid #334155' }}>
+          <div key={report.report_id} style={{ display: 'grid', gap: 8, marginBottom: 8, padding: 10, background: preview?.report_id === report.report_id ? '#e8efff' : '#f8fafc', borderRadius: 6, border: `1px solid ${preview?.report_id === report.report_id ? '#8fb4ff' : '#dbe3ef'}` }}>
             <div>
-              <div style={{ color: '#bfdbfe', fontSize: 13, fontWeight: 700 }}>{report.name}</div>
-              <span style={{ color: '#94a3b8', fontSize: 12 }}>{typeLabel(report.report_type)} · {new Date(report.created_at).toLocaleString()}</span>
+              <div style={{ color: '#172033', fontSize: 13, fontWeight: 800 }}>{report.name}</div>
+              <span style={{ color: '#66758f', fontSize: 12 }}>{typeLabel(report.report_type)} · {new Date(report.created_at).toLocaleString()}</span>
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button type="button" onClick={() => previewReport(report)} style={buttonStyle}>預覽</button>
               <button type="button" onClick={() => downloadReport(report)} style={buttonStyle}>下載</button>
-              <button type="button" onClick={async () => { await api.delete(`/projects/${projectId}/reports/${report.report_id}`); if (preview?.report_id === report.report_id) setPreview(null); loadReports() }} style={{ ...buttonStyle, background: '#7f1d1d' }}>刪除</button>
+              <button type="button" onClick={async () => { await api.delete(`/projects/${projectId}/reports/${report.report_id}`); if (preview?.report_id === report.report_id) setPreview(null); loadReports() }} style={{ ...buttonStyle, background: '#b42318' }}>刪除</button>
             </div>
           </div>
         ))}
       </div>
 
-      <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 8, minHeight: 420, overflow: 'hidden' }}>
+      <div style={{ background: '#fff', border: '1px solid #dbe3ef', borderRadius: 8, minHeight: 420, overflow: 'hidden' }}>
         {!preview ? (
-          <div style={{ height: '100%', minHeight: 420, display: 'grid', placeItems: 'center', color: '#94a3b8', fontSize: 13, padding: 24, textAlign: 'center' }}>
+          <div style={{ height: '100%', minHeight: 420, display: 'grid', placeItems: 'center', color: '#66758f', fontSize: 13, padding: 24, textAlign: 'center', background: '#f8fafc' }}>
             <div>
-              <strong style={{ color: '#f8fafc' }}>尚未選擇報告</strong>
+              <strong style={{ color: '#172033' }}>尚未選擇報告</strong>
               <div style={{ marginTop: 8, lineHeight: 1.5 }}>上傳或點選左側報告後，這裡會顯示預覽。也可先補齊材料測試、檢驗報告與合規文件。</div>
             </div>
           </div>
@@ -163,10 +163,10 @@ function ReportPreview({ report, typeLabel, onClose, onLoad }) {
 
   return (
     <div style={{ height: '100%', display: 'grid', gridTemplateRows: 'auto 1fr' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: 12, borderBottom: '1px solid #334155' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: 12, borderBottom: '1px solid #dbe3ef', background: '#f8fafc' }}>
         <div>
-          <strong>{report.name}</strong>
-          <div style={{ color: '#94a3b8', fontSize: 12 }}>{typeLabel(report.report_type)}</div>
+          <strong style={{ color: '#172033' }}>{report.name}</strong>
+          <div style={{ color: '#66758f', fontSize: 12 }}>{typeLabel(report.report_type)}</div>
         </div>
         <button type="button" onClick={onClose} style={buttonStyle}>關閉</button>
       </div>
@@ -181,9 +181,9 @@ function ReportPreview({ report, typeLabel, onClose, onLoad }) {
 
 function Stat({ label, value, danger = false }) {
   return (
-    <div style={{ border: '1px solid #334155', borderRadius: 8, padding: 10, background: '#0f172a' }}>
-      <div style={{ color: '#94a3b8', fontSize: 11 }}>{label}</div>
-      <div style={{ color: danger ? '#f87171' : '#f8fafc', fontWeight: 900, marginTop: 4 }}>{value}</div>
+    <div style={{ border: '1px solid #dbe3ef', borderRadius: 8, padding: 10, background: '#f8fafc' }}>
+      <div style={{ color: '#66758f', fontSize: 11 }}>{label}</div>
+      <div style={{ color: danger ? '#b42318' : '#172033', fontWeight: 900, marginTop: 4 }}>{value}</div>
     </div>
   )
 }
@@ -193,17 +193,17 @@ const fieldStyle = {
   boxSizing: 'border-box',
   padding: '8px 10px',
   borderRadius: 6,
-  border: '1px solid #334155',
-  background: '#0f172a',
-  color: '#f1f5f9',
+  border: '1px solid #d2dbe8',
+  background: '#f8fafc',
+  color: '#172033',
   fontSize: 12,
 }
 
 const buttonStyle = {
   border: 'none',
-  background: '#334155',
+  background: '#5b6b82',
   color: '#fff',
-  borderRadius: 4,
+  borderRadius: 6,
   padding: '5px 9px',
   cursor: 'pointer',
   fontSize: 12,

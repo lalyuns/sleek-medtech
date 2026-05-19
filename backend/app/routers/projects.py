@@ -5,8 +5,9 @@ from typing import List
 from app.database import get_db
 from app.dependencies.auth import get_current_user
 from app.dependencies.rbac import require_project_access
-from app.models.project import Project, ProjectStatus
+from app.models.project import Project
 from app.models.audit_log import AuditLog
+from app.models.product import Product, ProductStatus
 from app.models.user import User, UserRole
 from app.models.user_project_mapping import UserProjectMapping, AccessLevel
 from app.schemas.project import ProjectCreate, ProjectOut
@@ -32,6 +33,7 @@ def _project_out(project: Project, current_user: User, db: Session) -> ProjectOu
         description=project.description,
         status=project.status.value,
         owner_id=project.owner_id,
+        product_id=project.product_id,
         current_access_level=_access_level_for(project.project_id, current_user, db),
     )
 
@@ -56,7 +58,15 @@ def list_projects(db: Session = Depends(get_db), current_user: User = Depends(ge
 
 @router.post("/", response_model=ProjectOut, status_code=status.HTTP_201_CREATED)
 def create_project(body: ProjectCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    project = Project(name=body.name, description=body.description, owner_id=current_user.user_id)
+    if body.product_id is not None:
+        product = db.query(Product).filter(
+            Product.product_id == body.product_id,
+            Product.status == ProductStatus.active,
+            Product.is_deleted == False,
+        ).first()
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+    project = Project(name=body.name, description=body.description, owner_id=current_user.user_id, product_id=body.product_id)
     db.add(project)
     db.flush()
     mapping = UserProjectMapping(

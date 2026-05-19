@@ -3,7 +3,7 @@ from app.config import settings
 from datetime import timedelta
 from urllib.parse import urlparse
 
-BUCKET = "sleekmedtech"
+BUCKET = "ruichengbio"
 
 minio_client = Minio(
     settings.MINIO_ENDPOINT,

@@ -1,8 +1,10 @@
 .project-detail-page {
-  padding: 24px;
-  background: #0f172a;
+  width: min(1240px, calc(100vw - 48px));
+  margin: 0 auto;
+  padding: 28px 0 56px;
+  background: #f3f6fa;
   min-height: 100vh;
-  color: #f1f5f9;
+  color: #172033;
 }
 
 .project-detail-header {
@@ -10,6 +12,11 @@
   align-items: center;
   gap: 16px;
   margin-bottom: 18px;
+  padding: 18px;
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 2px 9px rgba(23, 32, 51, 0.05);
 }
 
 .project-detail-title {
@@ -19,6 +26,9 @@
 .project-detail-title h1 {
   margin-bottom: 4px;
   overflow-wrap: anywhere;
+  color: #172033;
+  font-size: 25px;
+  line-height: 1.2;
 }
 
 .project-detail-trace {
@@ -30,6 +40,11 @@
   gap: 8px;
   margin-bottom: 18px;
   flex-wrap: wrap;
+  padding: 8px;
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 2px 9px rgba(23, 32, 51, 0.04);
 }
 
 .project-upload-grid {
@@ -48,8 +63,9 @@
 .project-viewer-frame {
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid #334155;
+  border: 1px solid #cfd9e8;
   min-height: 520px;
+  background: #111827;
 }
 
 .project-bom-grid {
@@ -84,10 +100,10 @@
   max-width: min(420px, calc(100vw - 32px));
   padding: 12px 14px;
   border-radius: 8px;
-  border: 1px solid #334155;
-  background: rgba(15, 23, 42, 0.96);
-  color: #f8fafc;
-  box-shadow: 0 18px 48px rgba(2, 6, 23, 0.45);
+  border: 1px solid #cfd9e8;
+  background: #fff;
+  color: #172033;
+  box-shadow: 0 18px 48px rgba(23, 32, 51, 0.16);
 }
 
 .status-banner.error {
@@ -145,7 +161,8 @@
 
 @media (max-width: 640px) {
   .project-detail-page {
-    padding: 14px;
+    width: min(100% - 24px, 1240px);
+    padding: 18px 0 40px;
   }
 
   .project-detail-header {

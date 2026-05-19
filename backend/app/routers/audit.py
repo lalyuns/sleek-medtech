@@ -255,7 +255,7 @@ def export_audit_pdf(
     logs = q.order_by(AuditLog.timestamp.desc()).limit(50).all()
 
     lines = [
-        "Sleek MedTech Compliance Audit Package",
+        "睿程生醫 Compliance Audit Package",
         f"Generated: {datetime.utcnow().isoformat()} UTC",
         f"Filters: entity_type={entity_type or 'all'}, user_id={user_id or 'all'}, project_id={project_id or 'all'}",
         "",

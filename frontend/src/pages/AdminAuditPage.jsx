@@ -5,12 +5,26 @@ export default function AdminAuditPage() {
   const navigate = useNavigate()
 
   return (
-    <div style={{ padding: 32, background: '#0f172a', minHeight: '100vh', color: '#f1f5f9' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <button onClick={() => navigate('/projects')} style={{ padding: '6px 16px', borderRadius: 6, border: 'none', background: '#475569', color: '#fff', cursor: 'pointer' }}>返回</button>
-        <h1>稽核紀錄</h1>
-      </div>
-      <AuditPanel />
+    <div className="ops-page">
+      <header className="ops-topbar">
+        <div className="ops-brand">
+          <span className="ops-brand-mark">睿</span>
+          <span>睿程生醫 稽核紀錄</span>
+        </div>
+        <nav className="ops-nav">
+          <button onClick={() => navigate('/projects')}>專案列表</button>
+        </nav>
+      </header>
+
+      <main className="ops-main">
+        <section className="ops-title-row">
+          <h1>稽核紀錄</h1>
+          <p>查詢建立、更新、刪除、上傳與簽核的操作紀錄。</p>
+        </section>
+        <section className="ops-panel">
+          <AuditPanel />
+        </section>
+      </main>
     </div>
   )
 }

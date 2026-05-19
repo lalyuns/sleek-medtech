@@ -36,34 +36,62 @@ export default function AdminMaterialsPage() {
   }
 
   return (
-    <div style={{ padding: 32, background: '#0f172a', minHeight: '100vh', color: '#f1f5f9' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <button onClick={() => navigate('/projects')} style={{ padding: '6px 16px', borderRadius: 6, border: 'none', background: '#475569', color: '#fff', cursor: 'pointer' }}>返回</button>
-        <h1>材料管理</h1>
-      </div>
+    <div className="ops-page">
+      <header className="ops-topbar">
+        <div className="ops-brand">
+          <span className="ops-brand-mark">睿</span>
+          <span>睿程生醫 材料管理</span>
+        </div>
+        <nav className="ops-nav">
+          <button onClick={() => navigate('/projects')}>專案列表</button>
+        </nav>
+      </header>
 
-      <form onSubmit={create} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr auto', gap: 10, marginBottom: 24 }}>
-        <input required placeholder="材料名稱" value={form.name} onChange={(event) => setForm((value) => ({ ...value, name: event.target.value }))} style={fieldStyle} />
-        <input required type="number" step="0.0001" placeholder="密度 g/cm³" value={form.density} onChange={(event) => setForm((value) => ({ ...value, density: event.target.value }))} style={fieldStyle} />
-        <input required type="number" step="0.01" placeholder="抗拉強度" value={form.tensile_strength} onChange={(event) => setForm((value) => ({ ...value, tensile_strength: event.target.value }))} style={fieldStyle} />
-        <input required type="number" step="0.01" placeholder="單價/克" value={form.unit_price} onChange={(event) => setForm((value) => ({ ...value, unit_price: event.target.value }))} style={fieldStyle} />
-        <button style={buttonStyle}>建立</button>
-      </form>
+      <main className="ops-main">
+        <section className="ops-title-row">
+          <h1>材料管理</h1>
+          <p>維護 STL 版本可選用的材料密度、強度與單價參數。</p>
+        </section>
 
-      <div style={{ display: 'grid', gap: 10 }}>
-        {materials.map((material) => (
-          <div key={material.material_id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr auto', gap: 10, alignItems: 'center', background: '#1e293b', padding: 14, borderRadius: 8 }}>
-            <strong>{material.name}</strong>
-            <span>密度 {material.physical_parameters.density} g/cm³</span>
-            <span>抗拉 {material.physical_parameters.tensile_strength}</span>
-            <span>${material.physical_parameters.unit_price}/克</span>
-            <button onClick={() => deactivate(material.material_id)} style={{ ...buttonStyle, background: '#991b1b' }}>停用</button>
+        <form onSubmit={create} className="ops-panel admin-inline-form">
+          <input required placeholder="材料名稱" value={form.name} onChange={(event) => setForm((value) => ({ ...value, name: event.target.value }))} />
+          <input required type="number" step="0.0001" placeholder="密度 g/cm³" value={form.density} onChange={(event) => setForm((value) => ({ ...value, density: event.target.value }))} />
+          <input required type="number" step="0.01" placeholder="抗拉強度" value={form.tensile_strength} onChange={(event) => setForm((value) => ({ ...value, tensile_strength: event.target.value }))} />
+          <input required type="number" step="0.01" placeholder="單價/克" value={form.unit_price} onChange={(event) => setForm((value) => ({ ...value, unit_price: event.target.value }))} />
+          <button className="ops-primary">建立</button>
+        </form>
+
+        <section className="ops-table-panel">
+          <div className="ops-section-heading">
+            <h2>材料清單</h2>
+            <span>{materials.length} 筆</span>
           </div>
-        ))}
-      </div>
+          <div className="ops-table-wrap">
+            <table className="ops-table">
+              <thead>
+                <tr>
+                  <th>材料</th>
+                  <th>密度</th>
+                  <th>抗拉強度</th>
+                  <th>單價</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {materials.map((material) => (
+                  <tr key={material.material_id}>
+                    <td>{material.name}</td>
+                    <td>{material.physical_parameters.density} g/cm³</td>
+                    <td>{material.physical_parameters.tensile_strength}</td>
+                    <td>${material.physical_parameters.unit_price}/克</td>
+                    <td><button onClick={() => deactivate(material.material_id)} className="ops-danger">停用</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
     </div>
   )
 }
-
-const fieldStyle = { padding: '8px 12px', borderRadius: 6, border: '1px solid #334155', background: '#1e293b', color: '#f1f5f9' }
-const buttonStyle = { padding: '8px 14px', borderRadius: 6, border: 'none', background: '#3b82f6', color: '#fff', cursor: 'pointer' }

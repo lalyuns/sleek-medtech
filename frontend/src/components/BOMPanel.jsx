@@ -68,25 +68,25 @@ export default function BOMPanel({ projectId, versionId }) {
         </select>
       </div>
 
-      <div style={{ padding: 10, borderRadius: 8, background: '#0f172a', border: '1px solid #334155', color: '#93c5fd', fontSize: 12, lineHeight: 1.5 }}>
+      <div style={{ padding: 10, borderRadius: 8, background: '#edf4ff', border: '1px solid #c9dafc', color: '#2856c8', fontSize: 12, lineHeight: 1.5 }}>
         計算規則：STL 體積 mm³ ÷ 1000 = cm³；cm³ × 密度 g/cm³ = 材料重量 g；材料重量 × 單價 = 材料成本。
       </div>
 
       <div>
         {rows.map(({ label, value }) => (
           <div key={label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 13, gap: 12 }}>
-            <span style={{ color: '#94a3b8' }}>{label}</span>
+            <span style={{ color: '#66758f' }}>{label}</span>
             <span>{value}</span>
           </div>
         ))}
-        <div style={{ borderTop: '1px solid #334155', margin: '10px 0' }} />
+        <div style={{ borderTop: '1px solid #dbe3ef', margin: '10px 0' }} />
         <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 14 }}>
           <span>總成本</span>
           <span style={{ color: '#34d399' }}>{formatMoney(bom.total_cost, currency)}</span>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gap: 8, padding: 12, borderRadius: 8, background: '#0f172a', border: '1px solid #334155' }}>
+      <div style={{ display: 'grid', gap: 8, padding: 12, borderRadius: 8, background: '#f8fafc', border: '1px solid #dbe3ef' }}>
         <MarginRow label="報價" value={quote > 0 ? formatMoney(quote, currency) : '尚未輸入'} />
         <MarginRow label="毛利" value={margin ? formatMoney(margin.grossProfit, currency) : '尚未輸入'} danger={margin && margin.grossProfit < 0} />
         <MarginRow label="毛利率" value={margin ? `${margin.grossMargin.toFixed(1)}%` : '尚未輸入'} danger={margin && margin.grossMargin < 0} />
@@ -98,8 +98,8 @@ export default function BOMPanel({ projectId, versionId }) {
 function MarginRow({ label, value, danger = false }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-      <span style={{ color: '#94a3b8' }}>{label}</span>
-      <strong style={{ color: danger ? '#f87171' : '#f8fafc' }}>{value}</strong>
+      <span style={{ color: '#66758f' }}>{label}</span>
+      <strong style={{ color: danger ? '#b42318' : '#172033' }}>{value}</strong>
     </div>
   )
 }
@@ -114,8 +114,8 @@ const fieldStyle = {
   boxSizing: 'border-box',
   padding: '8px 10px',
   borderRadius: 6,
-  border: '1px solid #334155',
-  background: '#0f172a',
-  color: '#f1f5f9',
+  border: '1px solid #d2dbe8',
+  background: '#f8fafc',
+  color: '#172033',
   fontSize: 12,
 }

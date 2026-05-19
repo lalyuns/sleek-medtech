@@ -31,38 +31,65 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div style={{ padding: 32, background: '#0f172a', minHeight: '100vh', color: '#f1f5f9' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <button onClick={() => navigate('/projects')} style={{ padding: '6px 16px', borderRadius: 6, border: 'none', background: '#475569', color: '#fff', cursor: 'pointer' }}>返回</button>
-        <h1>使用者管理</h1>
-      </div>
+    <div className="ops-page">
+      <header className="ops-topbar">
+        <div className="ops-brand">
+          <span className="ops-brand-mark">睿</span>
+          <span>睿程生醫 使用者管理</span>
+        </div>
+        <nav className="ops-nav">
+          <button onClick={() => navigate('/projects')}>專案列表</button>
+        </nav>
+      </header>
 
-      <form onSubmit={create} style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr 1fr 1fr auto', gap: 10, marginBottom: 24 }}>
-        <input required placeholder="姓名" value={form.name} onChange={(event) => setForm((value) => ({ ...value, name: event.target.value }))} style={fieldStyle} />
-        <input required type="email" placeholder="Email" value={form.email} onChange={(event) => setForm((value) => ({ ...value, email: event.target.value }))} style={fieldStyle} />
-        <input required type="password" placeholder="密碼" value={form.password} onChange={(event) => setForm((value) => ({ ...value, password: event.target.value }))} style={fieldStyle} />
-        <select value={form.role} onChange={(event) => setForm((value) => ({ ...value, role: event.target.value }))} style={fieldStyle}>
-          <option value="engineer">工程師</option>
-          <option value="doctor">醫師</option>
-          <option value="vendor">廠商</option>
-          <option value="admin">系統管理員</option>
-        </select>
-        <button style={buttonStyle}>建立</button>
-      </form>
+      <main className="ops-main">
+        <section className="ops-title-row">
+          <h1>使用者管理</h1>
+          <p>建立內部帳號並指定全站角色；專案權限仍由專案成員頁控制。</p>
+        </section>
 
-      <div style={{ display: 'grid', gap: 10 }}>
-        {users.map((user) => (
-          <div key={user.user_id} style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr 1fr auto', gap: 10, alignItems: 'center', background: '#1e293b', padding: 14, borderRadius: 8 }}>
-            <strong>{user.name}</strong>
-            <span>{user.email}</span>
-            <span style={{ color: '#94a3b8' }}>{ROLE_LABELS[user.role] || user.role}</span>
-            <button onClick={() => remove(user.user_id)} style={{ ...buttonStyle, background: '#991b1b' }}>刪除</button>
+        <form onSubmit={create} className="ops-panel admin-inline-form users">
+          <input required placeholder="姓名" value={form.name} onChange={(event) => setForm((value) => ({ ...value, name: event.target.value }))} />
+          <input required type="email" placeholder="Email" value={form.email} onChange={(event) => setForm((value) => ({ ...value, email: event.target.value }))} />
+          <input required type="password" placeholder="密碼" value={form.password} onChange={(event) => setForm((value) => ({ ...value, password: event.target.value }))} />
+          <select value={form.role} onChange={(event) => setForm((value) => ({ ...value, role: event.target.value }))}>
+            <option value="engineer">工程師</option>
+            <option value="doctor">醫師</option>
+            <option value="vendor">廠商</option>
+            <option value="admin">系統管理員</option>
+          </select>
+          <button className="ops-primary">建立</button>
+        </form>
+
+        <section className="ops-table-panel">
+          <div className="ops-section-heading">
+            <h2>使用者清單</h2>
+            <span>{users.length} 筆</span>
           </div>
-        ))}
-      </div>
+          <div className="ops-table-wrap">
+            <table className="ops-table">
+              <thead>
+                <tr>
+                  <th>姓名</th>
+                  <th>Email</th>
+                  <th>角色</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((user) => (
+                  <tr key={user.user_id}>
+                    <td>{user.name}</td>
+                    <td>{user.email}</td>
+                    <td>{ROLE_LABELS[user.role] || user.role}</td>
+                    <td><button onClick={() => remove(user.user_id)} className="ops-danger">刪除</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
     </div>
   )
 }
-
-const fieldStyle = { padding: '8px 12px', borderRadius: 6, border: '1px solid #334155', background: '#1e293b', color: '#f1f5f9' }
-const buttonStyle = { padding: '8px 14px', borderRadius: 6, border: 'none', background: '#3b82f6', color: '#fff', cursor: 'pointer' }

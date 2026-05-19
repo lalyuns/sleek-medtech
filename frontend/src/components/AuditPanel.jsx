@@ -77,16 +77,16 @@ export default function AuditPanel({ compact = false }) {
           <button onClick={() => download('csv')} style={buttonStyle}>匯出 CSV</button>
           <button onClick={() => download('pdf')} style={buttonStyle}>匯出 PDF</button>
         </div>
-        <div style={{ display: 'grid', gap: 8, maxHeight: compact ? 360 : 580, overflowY: 'auto', paddingRight: 6, scrollbarColor: '#475569 #0f172a' }}>
+        <div style={{ display: 'grid', gap: 8, maxHeight: compact ? 360 : 580, overflowY: 'auto', paddingRight: 6, scrollbarColor: '#c5cfdd #f8fafc' }}>
           {logs.length === 0 ? <p style={{ color: '#64748b' }}>目前沒有稽核紀錄。</p> : logs.map((log) => (
             <button
               key={log.log_id}
               onClick={() => setSelected(log)}
               style={{
                 textAlign: 'left',
-                border: '1px solid #334155',
-                background: selected?.log_id === log.log_id ? '#1d4ed8' : '#0f172a',
-                color: '#f1f5f9',
+                border: `1px solid ${selected?.log_id === log.log_id ? '#8fb4ff' : '#dbe3ef'}`,
+                background: selected?.log_id === log.log_id ? '#e8efff' : '#fff',
+                color: '#172033',
                 borderRadius: 8,
                 padding: 12,
                 cursor: 'pointer',
@@ -94,9 +94,9 @@ export default function AuditPanel({ compact = false }) {
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
                 <strong style={{ lineHeight: 1.4 }}>{describeLog(log)}</strong>
-                <span style={{ color: ACTION_COLORS[log.action] || '#94a3b8', whiteSpace: 'nowrap', fontSize: 12 }}>{ACTION_LABELS[log.action] || log.action}</span>
+                <span style={{ color: ACTION_COLORS[log.action] || '#66758f', whiteSpace: 'nowrap', fontSize: 12 }}>{ACTION_LABELS[log.action] || log.action}</span>
               </div>
-              <div style={{ color: '#94a3b8', fontSize: 12, marginTop: 6 }}>
+              <div style={{ color: '#66758f', fontSize: 12, marginTop: 6 }}>
                 {new Date(log.timestamp).toLocaleString()} · {log.ip_address || '無 IP'}
               </div>
             </button>
@@ -105,7 +105,7 @@ export default function AuditPanel({ compact = false }) {
       </div>
 
       {!compact && (
-        <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: 16, minHeight: 300 }}>
+        <div style={{ background: '#fff', border: '1px solid #dbe3ef', borderRadius: 8, padding: 16, minHeight: 300 }}>
           {!selected ? (
             <p style={{ color: '#64748b' }}>選擇一筆稽核紀錄檢視異動前後內容。</p>
           ) : (
@@ -128,8 +128,8 @@ export default function AuditPanel({ compact = false }) {
   )
 }
 
-const fieldStyle = { padding: '8px 10px', borderRadius: 6, border: '1px solid #334155', background: '#0f172a', color: '#f1f5f9' }
-const buttonStyle = { padding: '8px 12px', borderRadius: 6, border: 'none', background: '#334155', color: '#fff', cursor: 'pointer' }
-const headlineStyle = { color: '#f8fafc', fontSize: 14, lineHeight: 1.45, padding: 10, borderRadius: 8, background: '#111827', border: '1px solid #334155' }
-const metaStyle = { color: '#94a3b8', fontSize: 12, marginBottom: 4 }
-const preStyle = { whiteSpace: 'pre-wrap', overflowX: 'auto', background: '#020617', color: '#cbd5e1', padding: 10, borderRadius: 6, fontSize: 11, maxHeight: 180 }
+const fieldStyle = { padding: '8px 10px', borderRadius: 6, border: '1px solid #d2dbe8', background: '#f8fafc', color: '#172033' }
+const buttonStyle = { padding: '8px 12px', borderRadius: 6, border: 'none', background: '#5b6b82', color: '#fff', cursor: 'pointer', fontWeight: 800 }
+const headlineStyle = { color: '#172033', fontSize: 14, lineHeight: 1.45, padding: 10, borderRadius: 8, background: '#f8fafc', border: '1px solid #dbe3ef' }
+const metaStyle = { color: '#66758f', fontSize: 12, marginBottom: 4 }
+const preStyle = { whiteSpace: 'pre-wrap', overflowX: 'auto', background: '#f8fafc', color: '#324156', padding: 10, borderRadius: 6, fontSize: 11, maxHeight: 180, border: '1px solid #dbe3ef' }
