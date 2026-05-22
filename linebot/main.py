@@ -32,11 +32,10 @@ faq_data = {
     "常見FAQ": main_menu_text, # 多加一個沒有空格的版本防呆
     "0": main_menu_text, # 讓用戶輸入 0 也能回到主選單
     
-    "申請平台帳密": (
-        "您好！感謝您對睿程生醫 3D 醫療網站的興趣。\n\n"
-        "請在此對話框留下您的「姓名」與「聯絡方式」，"
-        "我們的專員確認後，將盡快為您開通專屬帳號與密碼。"
-    ),
+    "申請平台帳密": [
+        "您好！感謝您對睿程生醫 3D 醫療網站的興趣。\n\n請長按複製下方的表單格式，填寫完畢後直接回傳對話框。我們的專員收到後，將盡快為您審核並開通專屬帳號與密碼。",
+        "申請人姓名：\n所屬醫療機構/企業全銜：\n職稱：\n聯繫電話：\n電子郵件："
+    ],
 
     "1": (
         "【1 品牌定位與核心技術 FAQ】\n\n"
@@ -91,17 +90,28 @@ async def callback(request: Request):
 def handle_message(event):
     user_text = event.message.text.strip()
     
+    # 判斷用戶輸入的文字是否有在我們的資料庫中
     if user_text in faq_data:
-        reply_text = faq_data[user_text]
+        reply_data = faq_data[user_text]
+        
+        # 判斷是單則訊息還是多則訊息
+        if isinstance(reply_data, list):
+            # 如果是列表，就把裡面的每一段文字都變成一則 LINE 訊息
+            messages_to_send = [TextSendMessage(text=text) for text in reply_data]
+        else:
+            # 如果只是一般文字，就包裝成單則訊息
+            messages_to_send = [TextSendMessage(text=reply_data)]
+            
     else:
-        reply_text = (
-            "已收到您的訊息！系統已通知內部人員。\n\n"
-            "我們將盡快由專員親自為您解答與服務，謝謝！"
-        )
+        # 如果沒有，就觸發預設的人工客服通知
+        messages_to_send = [
+            TextSendMessage(text="已收到您的訊息！系統已通知內部人員。\n\n目前客服較為忙碌，請稍候，我們將盡快由專員親自為您解答與服務。")
+        ]
     
+    # 將準備好的訊息陣列，一次回傳給用戶
     line_bot_api.reply_message(
         event.reply_token,
-        TextSendMessage(text=reply_text)
+        messages_to_send
     )
 
 if __name__ == "__main__":
