@@ -43,7 +43,7 @@ faq_data = {
         "2. 臨床醫師、醫療採購人員、投資人：包含受控型錄平台之情境標籤檢索、BOM 組件清單審閱，以及線上臨床需求留單與詢價委託程序。\n\n"
         "3. 合約製造廠商：包含專案交付版本活動進度追蹤、3D 幾何結構確認、後台生醫材料參數核對，以及系統受限唯讀（Read-Only）安全權限規範。\n\n"
         "完整手冊請點擊下方雲端連結下載詳閱：🔗\n"
-        "https://drive.google.com/drive/folders/1BSMMNl081H9YZuK6g4liJEAxc2imgdHD?usp=sharing"
+        "https://drive.google.com/drive/folders/1BSMMNl081H9YZuK6g4IiJEAxc2imgdHD?usp=sharing"
     ),
 
     "1": (
