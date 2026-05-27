@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import api from '../api/client'
 import useAuthStore from '../store/authStore'
 
@@ -121,6 +121,7 @@ export default function ProjectsPage() {
           {user?.role === 'admin' && <button onClick={() => navigate('/product-admin')}>產品</button>}
           {user?.role === 'admin' && <button onClick={() => navigate('/admin/users')}>使用者</button>}
           {user?.role === 'admin' && <button onClick={() => navigate('/admin/audit')}>稽核</button>}
+          <Link to="/guide">新手導覽</Link>
           <button onClick={logout}>登出</button>
         </nav>
       </header>
@@ -131,6 +132,14 @@ export default function ProjectsPage() {
             <h1>專案管理</h1>
             <p>STL 版本、材料證據、醫師回饋、BOM 與稽核紀錄的工作台。</p>
           </div>
+        </section>
+
+        <section className="ops-panel guide-strip">
+          <div>
+            <strong>交接建議：先看儀表板，再進入待簽核或缺文件的專案。</strong>
+            <span>新同仁可從導覽頁依管理員、工程師、醫師或業務視角快速了解流程。</span>
+          </div>
+          <Link className="ops-primary" to="/guide">查看導覽</Link>
         </section>
 
         <section className="ops-metrics" aria-label="專案統計">

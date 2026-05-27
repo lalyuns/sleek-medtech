@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import api from '../api/client'
 
 const SOURCE_LABELS = {
@@ -67,7 +68,8 @@ export default function ProductCatalogPage() {
           <span>睿程生醫 產品型錄</span>
         </div>
         <nav className="ops-nav">
-          <a href="/login">內部登入</a>
+          <Link to="/guide">新手導覽</Link>
+          <Link to="/login">內部登入</Link>
         </nav>
       </header>
 
@@ -75,6 +77,14 @@ export default function ProductCatalogPage() {
         <section className="ops-title-row">
           <h1>可申請產品</h1>
           <p>外部使用者可查看套組內容並送出需求；正式報價、文件與權限會由內部審核後開通。</p>
+        </section>
+
+        <section className="ops-panel guide-strip">
+          <div>
+            <strong>不知道從哪裡開始？</strong>
+            <span>先用新手導覽依身份選路徑，外部訪客看型錄，內部同仁登入後處理專案與申請。</span>
+          </div>
+          <Link className="ops-primary" to="/guide">打開導覽</Link>
         </section>
 
         <section className="ops-panel catalog-filter-panel">

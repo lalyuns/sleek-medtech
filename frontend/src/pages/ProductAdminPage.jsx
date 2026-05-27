@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import api from '../api/client'
 import useAuthStore from '../store/authStore'
 
@@ -106,6 +106,7 @@ export default function ProductAdminPage() {
         <nav className="ops-nav">
           <button onClick={() => navigate('/projects')}>專案列表</button>
           <button onClick={() => navigate('/catalog')}>公開型錄</button>
+          <Link to="/guide">新手導覽</Link>
           <button onClick={logout}>登出</button>
         </nav>
       </header>
@@ -114,6 +115,14 @@ export default function ProductAdminPage() {
         <section className="ops-title-row">
           <h1>產品與組件管理</h1>
           <p>管理套組、BOM、自製/外購來源、供應商資訊，以及外部需求申請。</p>
+        </section>
+
+        <section className="ops-panel guide-strip">
+          <div>
+            <strong>產品交接路徑：先確認外部申請，再檢查產品 BOM 與文件需求。</strong>
+            <span>AI 輔助可把申請、報價狀態與缺少文件整理成每日跟進清單。</span>
+          </div>
+          <Link className="ops-primary" to="/guide">查看 AI 導覽</Link>
         </section>
 
         <section className="product-admin-grid">
