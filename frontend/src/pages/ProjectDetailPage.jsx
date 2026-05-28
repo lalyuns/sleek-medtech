@@ -16,13 +16,12 @@ const ModelViewer = lazy(() => import('../components/viewer/ModelViewer'))
 const STATUS_COLOR = { draft: '#3b82f6', locked: '#22c55e', uploading: '#f59e0b' }
 const STATUS_LABELS = { draft: '草稿', locked: '已鎖定', uploading: '上傳中' }
 const TAB_LABELS = {
-  Overview: '總覽',
-  Upload: '上傳',
-  '3D Review': '3D 檢視',
-  BOM: 'BOM',
-  Reports: '報告',
+  Status: '狀態',
+  Files: '檔案',
+  Comments: '留言與標註',
+  Timeline: '時間線',
+  Advanced: '進階',
   Members: '成員',
-  Audit: '稽核',
 }
 const REPORT_TYPE_LABELS = {
   material_test: '材料測試',
@@ -32,13 +31,13 @@ const REPORT_TYPE_LABELS = {
   compliance: '合規文件',
   sterilization: '滅菌文件',
 }
+const REQUIRED_REPORTS = ['material_test', 'inspection', 'compliance']
 const SOURCE_LABELS = {
   self_made: '自製',
   purchased: '外購',
   outsourced: '委外',
   customer_supplied: '客供',
 }
-const REQUIRED_REPORTS = ['material_test', 'inspection', 'compliance']
 const CHUNK_SIZE = 5 * 1024 * 1024
 
 function resolveModelUrl(fileUrl) {
@@ -72,13 +71,15 @@ export default function ProjectDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { logout, user } = useAuthStore()
-  const [tab, setTab] = useState('Overview')
+  const [tab, setTab] = useState('Status')
   const [project, setProject] = useState(null)
   const [versions, setVersions] = useState([])
   const [materials, setMaterials] = useState([])
   const [reports, setReports] = useState([])
   const [feedbacks, setFeedbacks] = useState([])
-  const [bom, setBom] = useState(null)
+  const [workspaceFiles, setWorkspaceFiles] = useState([])
+  const [workspaceComments, setWorkspaceComments] = useState([])
+  const [events, setEvents] = useState([])
   const [projectProduct, setProjectProduct] = useState(null)
   const [activeVersion, setActiveVersion] = useState(null)
   const [locking, setLocking] = useState(false)
@@ -98,13 +99,11 @@ export default function ProjectDetailPage() {
   const canSignOff = user?.role === 'doctor' || user?.role === 'admin'
   const canWriteFeedback = user?.role === 'doctor' || user?.role === 'admin'
   const tabs = useMemo(() => {
-    const items = ['Overview', '3D Review']
-    if (canEditProject) items.splice(1, 0, 'Upload')
-    if (canEditProject) items.push('BOM', 'Reports')
-    if (canAdminProject) items.push('Members', 'Audit')
+    const items = ['Status', 'Files', 'Comments', 'Timeline', 'Advanced']
+    if (canAdminProject) items.push('Members')
     return items
-  }, [canAdminProject, canEditProject])
-  const selectedTab = tabs.includes(tab) ? tab : tabs[0] || 'Overview'
+  }, [canAdminProject])
+  const selectedTab = tabs.includes(tab) ? tab : tabs[0] || 'Status'
 
   const refreshVersions = useCallback(async () => {
     const { data } = await api.get(`/projects/${id}/versions`)
@@ -117,20 +116,26 @@ export default function ProjectDetailPage() {
   }, [id])
 
   const refreshWorkspace = useCallback(async () => {
-    const [projectResponse, versionsResponse, materialsResponse, reportsResponse, productsResponse] = await Promise.all([
+    const [projectResponse, versionsResponse, materialsResponse, reportsResponse, filesResponse, commentsResponse, eventsResponse, productsResponse] = await Promise.all([
       api.get(`/projects/${id}`).catch(() => ({ data: null })),
       api.get(`/projects/${id}/versions`).catch(() => ({ data: [] })),
       api.get('/materials/').catch(() => ({ data: [] })),
       api.get(`/projects/${id}/reports`).catch(() => ({ data: [] })),
+      api.get(`/projects/${id}/files`).catch(() => ({ data: [] })),
+      api.get(`/projects/${id}/comments`).catch(() => ({ data: [] })),
+      api.get(`/projects/${id}/events`).catch(() => ({ data: [] })),
       api.get('/products').catch(() => ({ data: [] })),
     ])
     const versionRows = versionsResponse.data
     const projectRow = projectResponse.data
     setProject(projectRow)
-    setProjectProduct(productsResponse.data.find((product) => product.product_id === projectRow?.product_id) || null)
     setVersions(versionRows)
     setMaterials(materialsResponse.data)
     setReports(reportsResponse.data)
+    setWorkspaceFiles(filesResponse.data)
+    setWorkspaceComments(commentsResponse.data)
+    setEvents(eventsResponse.data)
+    setProjectProduct(productsResponse.data.find((product) => product.product_id === projectRow?.product_id) || null)
     setActiveVersion((current) => {
       if (current) return versionRows.find((version) => version.version_id === current.version_id) || versionRows[versionRows.length - 1] || null
       return versionRows[versionRows.length - 1] || null
@@ -148,16 +153,6 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     Promise.resolve().then(() => refreshWorkspace())
   }, [refreshWorkspace])
-
-  useEffect(() => {
-    if (!activeVersion?.version_id) {
-      Promise.resolve().then(() => setBom(null))
-      return
-    }
-    api.get(`/projects/${id}/versions/${activeVersion.version_id}/bom`)
-      .then((response) => setBom(response.data))
-      .catch(() => setBom(null))
-  }, [activeVersion?.version_id, bomNonce, id])
 
   const canUpload = useMemo(() => uploadForm.material_id && uploadForm.file && !uploading, [uploadForm, uploading])
   const draftVersions = versions.filter((version) => version.status === 'draft')
@@ -189,8 +184,14 @@ export default function ProjectDetailPage() {
       detail: feedback.content,
       time: feedback.resolved_at,
     }))
-    return [...versionItems, ...reportItems, ...feedbackItems].slice(0, 6)
-  }, [feedbacks, reports, versions])
+    const eventItems = events.slice(0, 4).map((event) => ({
+      key: `event-${event.event_id}`,
+      title: event.summary,
+      detail: event.event_type,
+      time: event.created_at,
+    }))
+    return [...eventItems, ...versionItems, ...reportItems, ...feedbackItems].slice(0, 6)
+  }, [events, feedbacks, reports, versions])
 
   const showStatus = useCallback((message, type = 'info') => {
     setStatusBanner({ message, type })
@@ -290,7 +291,7 @@ export default function ProjectDetailPage() {
         </div>
         <nav className="ops-nav">
           <button onClick={() => navigate('/projects')}>專案列表</button>
-          <button onClick={() => navigate(`/projects/${id}/traceability`)}>查看溯源</button>
+          {user?.role === 'admin' && <button onClick={() => navigate('/settings')}>系統設定</button>}
           <button onClick={logout}>登出</button>
         </nav>
       </header>
@@ -307,7 +308,6 @@ export default function ProjectDetailPage() {
             v{activeVersion.version_number} / {STATUS_LABELS[activeVersion.status] || activeVersion.status}
           </span>
         )}
-        <button className="project-detail-trace" onClick={() => navigate(`/projects/${id}/traceability`)} style={primaryButton}>溯源圖</button>
       </div>
 
       <div className="project-tabs">
@@ -316,13 +316,13 @@ export default function ProjectDetailPage() {
         ))}
       </div>
 
-      {selectedTab === 'Overview' && (
+      {selectedTab === 'Status' && (
         <div style={{ display: 'grid', gap: 16 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12 }}>
             <Stat label="未簽核版本" value={draftVersions.length} tone={draftVersions.length ? '#fbbf24' : '#34d399'} note="草稿版本需完成臨床簽核" />
             <Stat label="待處理回饋" value={pendingFeedbacks.length} tone={pendingFeedbacks.length ? '#fbbf24' : '#34d399'} note="醫師回饋尚未轉需求" />
             <Stat label="缺少報告" value={missingReports.length} tone={missingReports.length ? '#f87171' : '#34d399'} note="材料/檢驗/合規文件" />
-            <Stat label="BOM 狀態" value={bom?.total_cost ? '已計算' : '待確認'} tone={bom?.total_cost ? '#34d399' : '#fbbf24'} note={bom?.total_cost ? `總成本 $${Number(bom.total_cost).toFixed(2)}` : '需有體積與材料參數'} />
+            <Stat label="專案檔案" value={workspaceFiles.length} tone="#3b82f6" note="模型、文件與證書集中查看" />
           </div>
 
           <div className="project-overview-grid">
@@ -332,7 +332,7 @@ export default function ProjectDetailPage() {
                 tasks={[
                   ...draftVersions.map((version) => ({ key: `draft-${version.version_id}`, tone: '#fbbf24', title: `v${version.version_number} 尚未簽核`, detail: version.description || '請確認版本內容後簽核或重新上傳。' })),
                   ...pendingFeedbacks.slice(0, 4).map((feedback) => ({ key: `feedback-${feedback.feedback_id}`, tone: '#22c55e', title: `v${feedback.version_number} 有待處理回饋`, detail: feedback.content })),
-                  ...missingReports.map((type) => ({ key: `report-${type}`, tone: '#f87171', title: `缺少${REPORT_TYPE_LABELS[type]}`, detail: '請補上報告並連結到目前版本的溯源鏈。' })),
+                  ...missingReports.map((type) => ({ key: `report-${type}`, tone: '#f87171', title: `缺少${REPORT_TYPE_LABELS[type]}`, detail: '請補上報告，讓專案檔案脈絡完整。' })),
                 ]}
               />
             </div>
@@ -361,57 +361,72 @@ export default function ProjectDetailPage() {
         </div>
       )}
 
-      {selectedTab === 'Upload' && (
-        <div className="project-upload-grid">
-          <form onSubmit={uploadVersion} style={panelStyle}>
-            <h2 style={panelTitle}>上傳 STL 版本</h2>
-            <div style={noticeStyle}>模型版本必須透過 STL 上傳建立，不提供手動建立版本；系統會自動計算 hash、體積並送入 worker。</div>
-            <label style={labelStyle}>材料</label>
-            <select required value={uploadForm.material_id} onChange={(event) => setUploadForm((form) => ({ ...form, material_id: event.target.value }))} style={fieldStyle}>
-              <option value="">選擇材料</option>
-              {materials.map((material) => <option key={material.material_id} value={material.material_id}>{material.name}</option>)}
-            </select>
-            <label style={labelStyle}>父版本</label>
-            <select value={uploadForm.parent_version_id} onChange={(event) => setUploadForm((form) => ({ ...form, parent_version_id: event.target.value }))} style={fieldStyle}>
-              <option value="">無父版本</option>
-              {versions.map((version) => <option key={version.version_id} value={version.version_id}>v{version.version_number}</option>)}
-            </select>
-            <label style={labelStyle}>版本說明</label>
-            <input value={uploadForm.description} onChange={(event) => setUploadForm((form) => ({ ...form, description: event.target.value }))} style={fieldStyle} placeholder="這次版本改了什麼？" />
-            <label style={labelStyle}>STL 檔案</label>
-            <input type="file" accept=".stl" required onChange={(event) => setUploadForm((form) => ({ ...form, file: event.target.files?.[0] || null }))} style={{ color: '#324156', marginBottom: 16 }} />
-            {uploading && (
-              <div style={{ marginBottom: 14 }}>
-                <div style={{ height: 8, background: '#d7e0eb', borderRadius: 999, overflow: 'hidden' }}>
-                  <div style={{ width: `${uploadProgress}%`, height: 8, background: '#3b82f6' }} />
-                </div>
-                <div style={{ color: '#66758f', fontSize: 12, marginTop: 6 }}>{uploadMessage}</div>
+      {selectedTab === 'Files' && (
+        <div style={{ display: 'grid', gap: 16 }}>
+          {canEditProject && (
+            <div className="project-upload-grid">
+              <form onSubmit={uploadVersion} style={panelStyle}>
+                <h2 style={panelTitle}>上傳 3D 模型</h2>
+                <div style={noticeStyle}>模型版本透過 STL 上傳建立；系統會自動計算 hash、體積並送入背景處理。</div>
+                <label style={labelStyle}>材料</label>
+                <select required value={uploadForm.material_id} onChange={(event) => setUploadForm((form) => ({ ...form, material_id: event.target.value }))} style={fieldStyle}>
+                  <option value="">選擇材料</option>
+                  {materials.map((material) => <option key={material.material_id} value={material.material_id}>{material.name}</option>)}
+                </select>
+                <label style={labelStyle}>父版本</label>
+                <select value={uploadForm.parent_version_id} onChange={(event) => setUploadForm((form) => ({ ...form, parent_version_id: event.target.value }))} style={fieldStyle}>
+                  <option value="">無父版本</option>
+                  {versions.map((version) => <option key={version.version_id} value={version.version_id}>v{version.version_number}</option>)}
+                </select>
+                <label style={labelStyle}>版本說明</label>
+                <input value={uploadForm.description} onChange={(event) => setUploadForm((form) => ({ ...form, description: event.target.value }))} style={fieldStyle} placeholder="這次版本改了什麼？" />
+                <label style={labelStyle}>STL 檔案</label>
+                <input type="file" accept=".stl" required onChange={(event) => setUploadForm((form) => ({ ...form, file: event.target.files?.[0] || null }))} style={{ color: '#324156', marginBottom: 16 }} />
+                {uploading && (
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ height: 8, background: '#d7e0eb', borderRadius: 999, overflow: 'hidden' }}>
+                      <div style={{ width: `${uploadProgress}%`, height: 8, background: '#3b82f6' }} />
+                    </div>
+                    <div style={{ color: '#66758f', fontSize: 12, marginTop: 6 }}>{uploadMessage}</div>
+                  </div>
+                )}
+                <div style={{ color: canUpload ? '#137447' : '#a44b00', fontSize: 12, marginBottom: 10 }}>{uploadDisabledReason}</div>
+                <button disabled={!canUpload} style={{ ...primaryButton, width: '100%', opacity: canUpload ? 1 : 0.55 }}>上傳 STL</button>
+              </form>
+
+              <div style={panelStyle}>
+                <h2 style={panelTitle}>上傳檢查表</h2>
+                <Checklist
+                  items={[
+                    ['材料已選擇', Boolean(uploadForm.material_id), '模型版本必須綁定合法啟用材料。'],
+                    ['父版本已確認', true, uploadForm.parent_version_id ? '將建立版本關聯。' : '第一版或無需繼承時可留空。'],
+                    ['版本說明已填寫', Boolean(uploadForm.description.trim()), '建議描述幾何或製程變更。'],
+                    ['STL 檔案已選擇', Boolean(uploadForm.file), '僅接受 STL，較大檔案會分塊上傳。'],
+                    ['Worker 狀態', !uploading, uploading ? uploadMessage : '待上傳後啟動 hash、合併、體積解析與儲存。'],
+                  ]}
+                />
               </div>
-            )}
-            <div style={{ color: canUpload ? '#137447' : '#a44b00', fontSize: 12, marginBottom: 10 }}>{uploadDisabledReason}</div>
-            <button disabled={!canUpload} style={{ ...primaryButton, width: '100%', opacity: canUpload ? 1 : 0.55 }}>上傳 STL</button>
-          </form>
+            </div>
+          )}
 
           <div style={panelStyle}>
-            <h2 style={panelTitle}>上傳檢查表</h2>
-            <Checklist
-              items={[
-                ['材料已選擇', Boolean(uploadForm.material_id), '模型版本必須綁定合法啟用材料。'],
-                ['父版本已確認', true, uploadForm.parent_version_id ? '將建立版本溯源關係。' : '第一版或無需繼承時可留空。'],
-                ['版本說明已填寫', Boolean(uploadForm.description.trim()), '建議描述幾何或製程變更，利於稽核閱讀。'],
-                ['STL 檔案已選擇', Boolean(uploadForm.file), '僅接受 STL，最大檔案將分塊上傳。'],
-                ['Worker 狀態', !uploading, uploading ? uploadMessage : '待上傳後啟動 hash、合併、體積解析與儲存。'],
-              ]}
-            />
-            <div style={{ marginTop: 18 }}>
-              <h3 style={{ ...panelTitle, fontSize: 16 }}>版本鏈</h3>
-              {versions.length === 0 ? <Empty text="上傳後的版本會顯示在這裡。" /> : <VersionList versions={versions} activeVersion={activeVersion} setActiveVersion={setActiveVersion} />}
-            </div>
+            <h2 style={panelTitle}>專案檔案</h2>
+            <WorkspaceFileList files={workspaceFiles} />
+          </div>
+
+          <div style={panelStyle}>
+            <h2 style={panelTitle}>3D 模型版本</h2>
+            {versions.length === 0 ? <Empty text="目前沒有模型版本。" /> : <VersionList versions={versions} activeVersion={activeVersion} setActiveVersion={setActiveVersion} />}
+          </div>
+
+          <div style={panelStyle}>
+            <h2 style={panelTitle}>一般文件</h2>
+            <ReportsPanel projectId={id} versionId={activeVersion?.version_id} />
           </div>
         </div>
       )}
 
-      {selectedTab === '3D Review' && (
+      {selectedTab === 'Comments' && (
         <div className="project-review-grid">
           <div style={panelStyle}>
             <h2 style={panelTitle}>版本</h2>
@@ -455,31 +470,80 @@ export default function ProjectDetailPage() {
               </div>
             )}
             <FeedbackPanel key={feedbackNonce} projectId={id} versionId={activeVersion?.version_id} canWrite={canWriteFeedback} currentUserId={user?.user_id} canModerate={canEditProject} />
+            <div style={{ marginTop: 16 }}>
+              <h3 style={{ ...panelTitle, fontSize: 16 }}>專案留言總覽</h3>
+              <WorkspaceCommentList comments={workspaceComments} />
+            </div>
           </div>
         </div>
       )}
 
-      {selectedTab === 'BOM' && (
-        <div className="project-bom-grid">
-          <div style={panelStyle}>
-            <h2 style={panelTitle}>BOM 摘要</h2>
-            <BOMPanel key={bomNonce} projectId={id} versionId={activeVersion?.version_id} />
-          </div>
-          <div style={panelStyle}>
-            <h2 style={panelTitle}>成本輸入</h2>
-            <CostsPanel projectId={id} onChanged={() => setBomNonce((value) => value + 1)} />
-          </div>
-          <div style={{ ...panelStyle, gridColumn: '1 / -1' }}>
-            <h2 style={panelTitle}>套組零件 BOM</h2>
-            <ProductBOMTable product={projectProduct} />
-          </div>
-        </div>
-      )}
-
-      {selectedTab === 'Reports' && (
+      {selectedTab === 'Timeline' && (
         <div style={panelStyle}>
-          <h2 style={panelTitle}>報告</h2>
-          <ReportsPanel projectId={id} versionId={activeVersion?.version_id} />
+          <h2 style={panelTitle}>專案時間線</h2>
+          <TimelineList events={events} />
+        </div>
+      )}
+
+      {selectedTab === 'Advanced' && (
+        <div style={{ display: 'grid', gap: 16 }}>
+          <div style={advancedIntroStyle}>
+            <strong>專案進階資訊</strong>
+            <span>這裡保留合規、工程與商務資料，但不放在日常工作台第一眼，避免使用者一進來就被後台功能淹沒。</span>
+          </div>
+
+          <section style={panelStyle}>
+            <div className="advanced-section-heading">
+              <div>
+                <h2 style={panelTitle}>合規資料</h2>
+                <p>報告、簽核狀態、材料證據與稽核紀錄集中放在這裡。</p>
+              </div>
+            </div>
+            <div className="advanced-grid">
+              <div>
+                <h3 style={subPanelTitle}>報告與證明文件</h3>
+                <ReportsPanel projectId={id} versionId={activeVersion?.version_id} />
+              </div>
+              <div>
+                <h3 style={subPanelTitle}>稽核紀錄</h3>
+                <AuditPanel />
+              </div>
+            </div>
+          </section>
+
+          <section style={panelStyle}>
+            <div className="advanced-section-heading">
+              <div>
+                <h2 style={panelTitle}>工程資料</h2>
+                <p>3D 版本、BOM、材料體積與產品組件資料集中在工程視角。</p>
+              </div>
+            </div>
+            <div className="advanced-grid">
+              <div>
+                <h3 style={subPanelTitle}>模型版本</h3>
+                <VersionList versions={versions} activeVersion={activeVersion} setActiveVersion={setActiveVersion} />
+              </div>
+              <div>
+                <h3 style={subPanelTitle}>BOM 摘要</h3>
+                <BOMPanel key={bomNonce} projectId={id} versionId={activeVersion?.version_id} />
+              </div>
+            </div>
+            <div style={{ marginTop: 16 }}>
+              <h3 style={subPanelTitle}>套組零件</h3>
+              <ProductBOMTable product={projectProduct} />
+            </div>
+          </section>
+
+          <section style={panelStyle}>
+            <div className="advanced-section-heading">
+              <div>
+                <h2 style={panelTitle}>商務資料</h2>
+                <p>成本、報價前資料與外部產品需求留在進階層，給需要的人使用。</p>
+              </div>
+              {user?.role === 'admin' && <button type="button" onClick={() => navigate('/product-admin')} style={smallGhostButton}>產品型錄管理</button>}
+            </div>
+            <CostsPanel projectId={id} onChanged={() => setBomNonce((value) => value + 1)} />
+          </section>
         </div>
       )}
 
@@ -490,12 +554,6 @@ export default function ProjectDetailPage() {
         </div>
       )}
 
-      {selectedTab === 'Audit' && (
-        <div style={panelStyle}>
-          <h2 style={panelTitle}>稽核紀錄</h2>
-          <AuditPanel />
-        </div>
-      )}
       </div>
     </>
   )
@@ -620,15 +678,65 @@ function VersionList({ versions, activeVersion, setActiveVersion }) {
   )
 }
 
-function ProductBOMTable({ product }) {
-  if (!product) {
-    return <Empty text="這個專案尚未連結產品套組，因此只會顯示 STL 材料與額外成本。" />
-  }
+function WorkspaceFileList({ files }) {
+  if (!files.length) return <Empty text="目前沒有專案檔案。" />
+  return (
+    <div style={{ display: 'grid', gap: 8 }}>
+      {files.map((file) => (
+        <div key={file.item_id} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 12, alignItems: 'center', border: '1px solid #dbe3ef', borderRadius: 8, padding: 12, background: '#f8fafc' }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ color: '#172033', fontWeight: 900, overflowWrap: 'anywhere' }}>
+              {file.name}
+              {file.version_number ? <span style={{ color: '#66758f', fontSize: 12, marginLeft: 8 }}>v{file.version_number}</span> : null}
+            </div>
+            <div style={{ color: '#66758f', fontSize: 12, marginTop: 4 }}>
+              {file.file_type} · {file.status} · {formatDate(file.created_at)}
+            </div>
+          </div>
+          <span className={`ops-status ${file.status === 'signed_off' ? 'success' : file.status === 'uploading' ? 'warning' : 'info'}`}>{file.source}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
 
-  const componentCost = product.bom_items.reduce((sum, item) => {
-    const unitCost = Number(item.component.unit_cost || 0)
-    return sum + unitCost * Number(item.quantity || 0)
-  }, 0)
+function WorkspaceCommentList({ comments }) {
+  if (!comments.length) return <Empty text="目前沒有留言。" />
+  return (
+    <div style={{ display: 'grid', gap: 8 }}>
+      {comments.map((comment) => (
+        <div key={comment.item_id} style={{ border: '1px solid #dbe3ef', borderRadius: 8, padding: 12, background: '#f8fafc' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
+            <strong style={{ color: '#172033', fontSize: 13 }}>{comment.file_id || '專案留言'}</strong>
+            <span className={`ops-status ${comment.status === 'resolved' ? 'success' : 'warning'}`}>{comment.status}</span>
+          </div>
+          <div style={{ color: '#324156', fontSize: 13, marginTop: 8, lineHeight: 1.5 }}>{comment.body}</div>
+          <div style={{ color: '#66758f', fontSize: 11, marginTop: 7 }}>{formatDate(comment.created_at || comment.resolved_at)}</div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function TimelineList({ events }) {
+  if (!events.length) return <Empty text="目前沒有時間線事件。" />
+  return (
+    <div style={{ display: 'grid', gap: 10 }}>
+      {events.map((event) => (
+        <div key={event.event_id} style={{ display: 'grid', gridTemplateColumns: '92px minmax(0, 1fr)', gap: 14, border: '1px solid #dbe3ef', borderRadius: 8, padding: 12, background: '#f8fafc' }}>
+          <div style={{ color: '#66758f', fontSize: 12, fontWeight: 800 }}>{formatDate(event.created_at)}</div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ color: '#172033', fontWeight: 900 }}>{event.summary}</div>
+            <div style={{ color: '#66758f', fontSize: 12, marginTop: 4 }}>{event.event_type}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function ProductBOMTable({ product }) {
+  if (!product) return <Empty text="這個專案尚未連結產品套組；可在進階設定中維護產品型錄與組件。" />
 
   return (
     <div>
@@ -637,20 +745,7 @@ function ProductBOMTable({ product }) {
           <strong style={{ color: '#172033' }}>{product.name}</strong>
           <div style={{ color: '#66758f', fontSize: 12, marginTop: 3 }}>{product.sku}</div>
         </div>
-        <div style={{ color: '#137447', fontWeight: 900 }}>組件估算 ${componentCost.toFixed(2)}</div>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10, marginBottom: 12 }}>
-        {[
-          ['使用部位', product.body_region || '未設定'],
-          ['臨床用途', product.clinical_use || '未設定'],
-          ['使用階段', product.surgical_stage || '未設定'],
-          ['適應症', product.indication || '未設定'],
-        ].map(([label, value]) => (
-          <div key={label} style={{ padding: 10, borderRadius: 8, background: '#f8fafc', border: '1px solid #dbe3ef' }}>
-            <div style={{ color: '#66758f', fontSize: 11, fontWeight: 900, marginBottom: 4 }}>{label}</div>
-            <div style={{ color: '#172033', fontSize: 13, fontWeight: 800, lineHeight: 1.4 }}>{value}</div>
-          </div>
-        ))}
+        <span className="ops-status info">{product.bom_items.length} 個組件</span>
       </div>
       <div className="ops-table-wrap">
         <table className="ops-table">
@@ -659,31 +754,22 @@ function ProductBOMTable({ product }) {
               <th>組件</th>
               <th>來源</th>
               <th>數量</th>
-              <th>供應商/委外廠</th>
+              <th>供應商</th>
               <th>單價</th>
-              <th>小計</th>
               <th>文件</th>
             </tr>
           </thead>
           <tbody>
-            {product.bom_items.map((item) => {
-              const unitCost = Number(item.component.unit_cost || 0)
-              const subtotal = unitCost * Number(item.quantity || 0)
-              return (
-                <tr key={item.item_id}>
-                  <td>
-                    {item.component.name}
-                    {item.note && <div className="ops-muted">{item.note}</div>}
-                  </td>
-                  <td><span className={`ops-status ${item.component.source_type === 'self_made' ? 'info' : 'warning'}`}>{SOURCE_LABELS[item.component.source_type] || item.component.source_type}</span></td>
-                  <td>{item.quantity} {item.unit}</td>
-                  <td>{item.component.supplier_name || '-'}</td>
-                  <td>{unitCost ? `$${unitCost.toFixed(2)}` : '-'}</td>
-                  <td>{subtotal ? `$${subtotal.toFixed(2)}` : '-'}</td>
-                  <td>{item.component.requires_certificate ? '需文件' : '不需文件'}</td>
-                </tr>
-              )
-            })}
+            {product.bom_items.map((item) => (
+              <tr key={item.item_id}>
+                <td>{item.component.name}<div className="ops-muted">{item.note}</div></td>
+                <td><span className={`ops-status ${item.component.source_type === 'self_made' ? 'info' : 'warning'}`}>{SOURCE_LABELS[item.component.source_type] || item.component.source_type}</span></td>
+                <td>{item.quantity} {item.unit}</td>
+                <td>{item.component.supplier_name || '-'}</td>
+                <td>{item.component.unit_cost ? `$${Number(item.component.unit_cost).toFixed(2)}` : '-'}</td>
+                <td>{item.component.requires_certificate ? '需文件' : '不需文件'}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -697,6 +783,8 @@ function Empty({ text }) {
 
 const panelStyle = { background: '#fff', border: '1px solid #dbe3ef', borderRadius: 8, padding: 18, boxShadow: '0 2px 9px rgba(23, 32, 51, 0.05)' }
 const panelTitle = { fontSize: 18, marginBottom: 14, color: '#172033' }
+const subPanelTitle = { fontSize: 15, margin: '0 0 12px', color: '#172033' }
+const advancedIntroStyle = { display: 'grid', gap: 5, background: '#eef4ff', border: '1px solid #c9dafc', borderRadius: 8, padding: 14, color: '#2856c8', fontSize: 13, lineHeight: 1.5 }
 const labelStyle = { display: 'block', color: '#66758f', fontSize: 12, marginBottom: 6, marginTop: 12, fontWeight: 800 }
 const fieldStyle = { width: '100%', padding: '9px 10px', borderRadius: 6, border: '1px solid #d2dbe8', background: '#f8fafc', color: '#172033' }
 const noticeStyle = { border: '1px solid #c9dafc', borderRadius: 8, padding: 10, background: '#edf4ff', color: '#2856c8', fontSize: 12, lineHeight: 1.5, marginBottom: 12 }

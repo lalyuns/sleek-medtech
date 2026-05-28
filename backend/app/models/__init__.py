@@ -3,6 +3,10 @@ from .user import User
 from .material import Material
 from .project import Project
 from .user_project_mapping import UserProjectMapping
+from .project_member import ProjectMember
+from .project_file import ProjectFile
+from .comment import Comment
+from .event import Event
 from .model_version import ModelVersion
 from .feedback import Feedback
 from .report import Report
@@ -13,6 +17,7 @@ from .product import Component, Product, ProductBOMItem, ProductRequest
 
 __all__ = [
     "Base", "User", "Material", "Project", "UserProjectMapping",
+    "ProjectMember", "ProjectFile", "Comment", "Event",
     "ModelVersion", "Feedback", "Report", "ReferenceEdge", "Cost", "AuditLog",
     "Product", "Component", "ProductBOMItem", "ProductRequest",
 ]

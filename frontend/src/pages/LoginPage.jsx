@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import api from '../api/client'
 import useAuthStore from '../store/authStore'
 
@@ -54,7 +54,6 @@ export default function LoginPage() {
         <button type="submit" className="ops-primary">
           登入
         </button>
-        <Link className="login-guide-link" to="/guide">第一次使用？打開新手導覽</Link>
       </form>
     </div>
   )

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel
 
@@ -6,6 +7,8 @@ class ProjectCreate(BaseModel):
     name: str
     description: Optional[str] = None
     product_id: Optional[int] = None
+    product_name: Optional[str] = None
+    material_name: Optional[str] = None
 
 
 class ProjectOut(BaseModel):
@@ -15,6 +18,9 @@ class ProjectOut(BaseModel):
     status: str
     owner_id: int
     product_id: Optional[int] = None
+    product_name: Optional[str] = None
+    material_name: Optional[str] = None
+    updated_at: Optional[datetime] = None
     current_access_level: Optional[str] = None
 
     model_config = {"from_attributes": True}

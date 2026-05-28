@@ -8,10 +8,12 @@ from app.dependencies.rbac import require_project_access
 from app.models.project import Project
 from app.models.audit_log import AuditLog
 from app.models.product import Product, ProductStatus
+from app.models.project_member import ProjectAccessLevel, ProjectMember
 from app.models.user import User, UserRole
 from app.models.user_project_mapping import UserProjectMapping, AccessLevel
 from app.schemas.project import ProjectCreate, ProjectOut
 from app.schemas.user import ProjectMemberOut
+from app.services.events import record_event
 
 router = APIRouter(prefix="/api/v1/projects", tags=["projects"])
 
@@ -34,6 +36,9 @@ def _project_out(project: Project, current_user: User, db: Session) -> ProjectOu
         status=project.status.value,
         owner_id=project.owner_id,
         product_id=project.product_id,
+        product_name=project.product_name,
+        material_name=project.material_name,
+        updated_at=project.updated_at,
         current_access_level=_access_level_for(project.project_id, current_user, db),
     )
 
@@ -66,7 +71,14 @@ def create_project(body: ProjectCreate, db: Session = Depends(get_db), current_u
         ).first()
         if not product:
             raise HTTPException(status_code=404, detail="Product not found")
-    project = Project(name=body.name, description=body.description, owner_id=current_user.user_id, product_id=body.product_id)
+    project = Project(
+        name=body.name,
+        description=body.description,
+        owner_id=current_user.user_id,
+        product_id=body.product_id,
+        product_name=body.product_name,
+        material_name=body.material_name,
+    )
     db.add(project)
     db.flush()
     mapping = UserProjectMapping(
@@ -75,6 +87,24 @@ def create_project(body: ProjectCreate, db: Session = Depends(get_db), current_u
         access_level=AccessLevel.admin,
     )
     db.add(mapping)
+    db.add(ProjectMember(
+        user_id=current_user.user_id,
+        project_id=project.project_id,
+        access_level=ProjectAccessLevel.admin,
+    ))
+    record_event(
+        db,
+        project_id=project.project_id,
+        actor_id=current_user.user_id,
+        event_type="project.created",
+        target_type="project",
+        target_id=project.project_id,
+        summary=f"建立專案：{project.name}",
+        payload_json={
+            "product_name": project.product_name,
+            "material_name": project.material_name,
+        },
+    )
     db.commit()
     db.refresh(project)
     return _project_out(project, current_user, db)
@@ -108,6 +138,15 @@ def add_member(
         existing.access_level = access_level
     else:
         db.add(UserProjectMapping(user_id=user_id, project_id=project_id, access_level=access_level))
+    native = db.query(ProjectMember).filter(
+        ProjectMember.project_id == project_id,
+        ProjectMember.user_id == user_id,
+    ).first()
+    native_level = ProjectAccessLevel(access_level.value)
+    if native:
+        native.access_level = native_level
+    else:
+        db.add(ProjectMember(user_id=user_id, project_id=project_id, access_level=native_level))
     db.commit()
 
 
@@ -162,4 +201,10 @@ def remove_member(
     if not mapping:
         raise HTTPException(status_code=404, detail="Project member not found")
     db.delete(mapping)
+    native = db.query(ProjectMember).filter(
+        ProjectMember.project_id == project_id,
+        ProjectMember.user_id == user_id,
+    ).first()
+    if native:
+        db.delete(native)
     db.commit()

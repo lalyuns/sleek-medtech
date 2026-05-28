@@ -13,6 +13,7 @@ from app.models.report import Report
 from app.models.user import User
 from app.models.user_project_mapping import AccessLevel
 from app.schemas.report import ReportOut
+from app.services.events import record_event
 from app.storage import BUCKET, ensure_bucket, minio_client, public_object_url, signed_object_url
 
 router = APIRouter(prefix="/api/v1/projects", tags=["reports"])
@@ -59,6 +60,17 @@ def upload_report(
         file_url=public_object_url(object_name),
     )
     db.add(report)
+    db.flush()
+    record_event(
+        db,
+        project_id=project_id,
+        actor_id=current_user.user_id,
+        event_type="file.report_uploaded",
+        target_type="report",
+        target_id=report.report_id,
+        summary=f"上傳文件：{report.name}",
+        payload_json={"report_type": report.report_type},
+    )
     db.commit()
     db.refresh(report)
     return report

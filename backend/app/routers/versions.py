@@ -21,6 +21,7 @@ from app.storage import signed_object_url
 from app.schemas.cost import BOMOut, BOMProductContext, BOMVersionContext, CostOut
 from app.schemas.reference_edge import ReferenceEdgeCreate, ReferenceEdgeOut, TraceabilityOut, TraceEdge, TraceNode
 from app.schemas.version import VersionLockRequest, VersionOut
+from app.services.events import record_event
 
 router = APIRouter(prefix="/api/v1/projects", tags=["versions"])
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -90,6 +91,16 @@ def lock_version(
         "email": current_user.email,
         "role": current_user.role.value,
     }
+    record_event(
+        db,
+        project_id=project_id,
+        actor_id=current_user.user_id,
+        event_type="file.signed_off",
+        target_type="model_version",
+        target_id=version.version_id,
+        summary=f"簽核 3D 模型 v{version.version_number}",
+        payload_json={"reason": version.signoff_reason},
+    )
     db.commit()
     db.refresh(version)
     return version

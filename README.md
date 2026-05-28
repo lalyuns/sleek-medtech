@@ -48,7 +48,6 @@ npm run dev
 | 項目 | URL |
 | --- | --- |
 | 公開產品型錄 | http://localhost:5173/catalog |
-| AI 新手導覽 | http://localhost:5173/guide |
 | 內部登入 | http://localhost:5173/login |
 | 專案管理 | http://localhost:5173/projects |
 | 產品內部管理 | http://localhost:5173/product-admin |
@@ -86,16 +85,15 @@ demo 專案 `MR-2026-041`、`CM-2026-017` 與 `SG-2026-009` 會透過 `projects.
 ## 主要流程
 
 1. 外部使用者可進入 `/catalog` 查看公開產品、組件來源與數量，並送出需求申請。
-2. 新使用者可進入 `/guide` 依管理員、工程師、醫師或業務窗口角色查看上手路徑與 AI 交接摘要。
-3. 管理員登入 `/product-admin` 維護產品、組件、套組 BOM，並處理外部申請狀態。
-4. 內部使用者登入後進入 `/projects`，可建立專案並選擇要連結的產品套組。
-5. 在專案「上傳」分頁選擇材料、父版本與 STL 檔案；版本只能透過 STL 上傳建立。
-6. worker 完成後寫入檔案 URL、SHA-256、STL 體積與版本狀態。
-7. 在「3D 檢視」分頁拖曳模型、使用剖面控制，點擊模型建立回饋 pin。
-8. 在「BOM」分頁查看 STL 材料成本、工時/外部打樣成本、報價毛利，以及產品套組零件 BOM。
-9. 在「報告」分頁上傳材料、檢驗或合規文件，系統會建立溯源關聯。
-10. 在「溯源圖」檢查版本、回饋與報告的追蹤鏈。
-11. 醫師或管理員完成簽核後，版本會鎖定並留下不可逆稽核紀錄。
+2. 管理員登入 `/product-admin` 維護產品、組件、套組 BOM，並處理外部申請狀態。
+3. 內部使用者登入後進入 `/projects`，可建立專案並選擇要連結的產品套組。
+4. 在專案「上傳」分頁選擇材料、父版本與 STL 檔案；版本只能透過 STL 上傳建立。
+5. worker 完成後寫入檔案 URL、SHA-256、STL 體積與版本狀態。
+6. 在「3D 檢視」分頁拖曳模型、使用剖面控制，點擊模型建立回饋 pin。
+7. 在「BOM」分頁查看 STL 材料成本、工時/外部打樣成本、報價毛利，以及產品套組零件 BOM。
+8. 在「報告」分頁上傳材料、檢驗或合規文件，系統會建立溯源關聯。
+9. 在「溯源圖」檢查版本、回饋與報告的追蹤鏈。
+10. 醫師或管理員完成簽核後，版本會鎖定並留下不可逆稽核紀錄。
 
 ## 驗證指令
 
@@ -128,3 +126,16 @@ npm run test:e2e
 - 外部申請只建立需求紀錄；正式報價、文件權限與系統帳號需由內部審核後處理。
 - 前端 UI 必須依角色與專案權限隱藏不可執行的操作。
 - 所有建立、更新、刪除、上傳與簽核行為都必須可稽核。
+# rc_medtech
+
+This repository is a working fork based on `C:\Users\User\sleek-medtech`.
+
+Current direction:
+
+- Keep the useful full-stack medical-device collaboration flow from `sleek-medtech`.
+- Simplify the database and UI mental model so the first screen is easy to understand.
+- Treat product catalog, BOM, costing, and full audit traceability as advanced modules instead of first-run clutter.
+
+Start with the database review here:
+
+- [docs/DATABASE_FIRST_PRINCIPLES.md](docs/DATABASE_FIRST_PRINCIPLES.md)

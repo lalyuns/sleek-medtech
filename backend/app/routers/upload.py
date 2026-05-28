@@ -15,6 +15,7 @@ from app.models.model_version import ModelVersion, VersionStatus
 from app.models.reference_edge import ReferenceEdge, TargetType
 from app.models.user import User
 from app.models.user_project_mapping import AccessLevel
+from app.services.events import record_event
 from app.storage import minio_client, ensure_bucket, BUCKET
 from app.tasks import enqueue_process_upload
 
@@ -78,6 +79,20 @@ def init_upload(
             target_type=TargetType.old_version,
             target_id=parent_version_id,
         ))
+    record_event(
+        db,
+        project_id=project_id,
+        actor_id=current_user.user_id,
+        event_type="file.upload_started",
+        target_type="model_version",
+        target_id=version.version_id,
+        summary=f"開始上傳 3D 模型 v{version.version_number}",
+        payload_json={
+            "hash_value": hash_value,
+            "material_id": material_id,
+            "parent_version_id": parent_version_id,
+        },
+    )
     db.commit()
     db.refresh(version)
 

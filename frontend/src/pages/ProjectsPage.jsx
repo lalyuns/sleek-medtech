@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import api from '../api/client'
 import useAuthStore from '../store/authStore'
 
@@ -21,11 +21,11 @@ function statusTone(status) {
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState([])
-  const [products, setProducts] = useState([])
   const [projectMeta, setProjectMeta] = useState({})
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [productId, setProductId] = useState('')
+  const [productName, setProductName] = useState('')
+  const [materialName, setMaterialName] = useState('')
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [versionFilter, setVersionFilter] = useState('all')
@@ -34,15 +34,10 @@ export default function ProjectsPage() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    Promise.all([
-      api.get('/projects/'),
-      api.get('/products').catch(() => ({ data: [] })),
-    ])
-      .then(async (response) => {
-        const [projectsResponse, productsResponse] = response
+    api.get('/projects/')
+      .then(async (projectsResponse) => {
         const items = projectsResponse.data
         setProjects(items)
-        setProducts(productsResponse.data)
 
         const versionRows = await Promise.all(
           items.map((project) => (
@@ -56,10 +51,6 @@ export default function ProjectsPage() {
       })
       .finally(() => setLoading(false))
   }, [])
-
-  const productById = useMemo(() => (
-    Object.fromEntries(products.map((product) => [String(product.product_id), product]))
-  ), [products])
 
   const rows = useMemo(() => projects.map((project) => {
     const versions = projectMeta[project.project_id] || []
@@ -94,13 +85,15 @@ export default function ProjectsPage() {
     const { data } = await api.post('/projects/', {
       name,
       description: description || null,
-      product_id: productId ? Number(productId) : null,
+      product_name: productName || null,
+      material_name: materialName || null,
     })
     setProjects((items) => [...items, data])
     setProjectMeta((items) => ({ ...items, [data.project_id]: [] }))
     setName('')
     setDescription('')
-    setProductId('')
+    setProductName('')
+    setMaterialName('')
   }
 
   const clearFilters = () => {
@@ -117,11 +110,7 @@ export default function ProjectsPage() {
           <span>睿程生醫 醫材追溯系統</span>
         </div>
         <nav className="ops-nav">
-          {user?.role === 'admin' && <button onClick={() => navigate('/admin/materials')}>材料</button>}
-          {user?.role === 'admin' && <button onClick={() => navigate('/product-admin')}>產品</button>}
-          {user?.role === 'admin' && <button onClick={() => navigate('/admin/users')}>使用者</button>}
-          {user?.role === 'admin' && <button onClick={() => navigate('/admin/audit')}>稽核</button>}
-          <Link to="/guide">新手導覽</Link>
+          {user?.role === 'admin' && <button onClick={() => navigate('/settings')}>系統設定</button>}
           <button onClick={logout}>登出</button>
         </nav>
       </header>
@@ -130,16 +119,8 @@ export default function ProjectsPage() {
         <section className="ops-title-row">
           <div>
             <h1>專案管理</h1>
-            <p>STL 版本、材料證據、醫師回饋、BOM 與稽核紀錄的工作台。</p>
+            <p>以專案為核心整理醫材檔案、留言、成員與時間線。</p>
           </div>
-        </section>
-
-        <section className="ops-panel guide-strip">
-          <div>
-            <strong>交接建議：先看儀表板，再進入待簽核或缺文件的專案。</strong>
-            <span>新同仁可從導覽頁依管理員、工程師、醫師或業務視角快速了解流程。</span>
-          </div>
-          <Link className="ops-primary" to="/guide">查看導覽</Link>
         </section>
 
         <section className="ops-metrics" aria-label="專案統計">
@@ -153,10 +134,8 @@ export default function ProjectsPage() {
           <form className="ops-create-row" onSubmit={createProject}>
             <input value={name} onChange={(event) => setName(event.target.value)} placeholder="新專案名稱" required />
             <input value={description} onChange={(event) => setDescription(event.target.value)} placeholder="描述或合規情境" />
-            <select value={productId} onChange={(event) => setProductId(event.target.value)} aria-label="產品套組">
-              <option value="">不連結產品套組</option>
-              {products.map((product) => <option key={product.product_id} value={product.product_id}>{product.name}</option>)}
-            </select>
+            <input value={productName} onChange={(event) => setProductName(event.target.value)} placeholder="器材或產品名稱" />
+            <input value={materialName} onChange={(event) => setMaterialName(event.target.value)} placeholder="主要材料" />
             <button type="submit" className="ops-primary">新增專案</button>
           </form>
 
@@ -196,7 +175,7 @@ export default function ProjectsPage() {
                 <thead>
                   <tr>
                     <th>專案名稱</th>
-                    <th>產品套組</th>
+                    <th>器材/材料</th>
                     <th>專案狀態</th>
                     <th>最新版本</th>
                     <th>版本狀態</th>
@@ -214,7 +193,10 @@ export default function ProjectsPage() {
                         </button>
                         <div className="ops-muted">{project.description || '尚無描述'}</div>
                       </td>
-                      <td>{project.product_id ? productById[String(project.product_id)]?.name || `#${project.product_id}` : '未連結'}</td>
+                      <td>
+                        {project.product_name || '未設定'}
+                        <div className="ops-muted">{project.material_name || '材料未設定'}</div>
+                      </td>
                       <td><StatusPill tone={statusTone(project.status)}>{formatStatus(project.status, PROJECT_STATUS_LABELS)}</StatusPill></td>
                       <td>{latest ? `v${latest.version_number}` : '無'}</td>
                       <td><StatusPill tone={statusTone(latest?.status)}>{formatStatus(latest?.status)}</StatusPill></td>

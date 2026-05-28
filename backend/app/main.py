@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from app.middleware.audit import AuditMiddleware
-from app.routers import audit, auth, costs, feedbacks, materials, products, projects, reports, upload, users, versions
+from app.routers import audit, auth, costs, feedbacks, materials, products, projects, reports, upload, users, versions, workspace
 
 app = FastAPI(title="睿程生醫 API", version="0.1.0")
 
@@ -9,6 +9,7 @@ app.add_middleware(AuditMiddleware)
 app.include_router(auth.router)
 app.include_router(materials.router)
 app.include_router(projects.router)
+app.include_router(workspace.router)
 app.include_router(feedbacks.router)
 app.include_router(versions.router)
 app.include_router(costs.router)

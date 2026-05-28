@@ -11,6 +11,7 @@ from app.models.reference_edge import ReferenceEdge, TargetType
 from app.models.user import User, UserRole
 from app.models.user_project_mapping import AccessLevel, UserProjectMapping
 from app.schemas.feedback import FeedbackCreate, FeedbackOut, FeedbackUpdate
+from app.services.events import record_event
 
 router = APIRouter(prefix="/api/v1/projects", tags=["feedbacks"])
 
@@ -77,6 +78,17 @@ def create_feedback(
         coordinates=body.coordinates.model_dump() if body.coordinates else None,
     )
     db.add(feedback)
+    db.flush()
+    record_event(
+        db,
+        project_id=project_id,
+        actor_id=current_user.user_id,
+        event_type="comment.created",
+        target_type="feedback",
+        target_id=feedback.feedback_id,
+        summary="新增模型回饋",
+        payload_json={"version_id": version_id},
+    )
     db.commit()
     db.refresh(feedback)
     return feedback

@@ -11,7 +11,7 @@ const ProductAdminPage = lazy(() => import('./pages/ProductAdminPage'))
 const AdminMaterialsPage = lazy(() => import('./pages/AdminMaterialsPage'))
 const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage'))
 const AdminAuditPage = lazy(() => import('./pages/AdminAuditPage'))
-const OnboardingGuidePage = lazy(() => import('./pages/OnboardingGuidePage'))
+const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 
 function PrivateRoute({ children }) {
   const { token } = useAuthStore()
@@ -24,9 +24,9 @@ export default function App() {
       <Suspense fallback={<PageLoading />}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/guide" element={<OnboardingGuidePage />} />
           <Route path="/catalog" element={<ProductCatalogPage />} />
           <Route path="/projects" element={<PrivateRoute><ProjectsPage /></PrivateRoute>} />
+          <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
           <Route path="/product-admin" element={<PrivateRoute><ProductAdminPage /></PrivateRoute>} />
           <Route path="/projects/:id" element={<PrivateRoute><ProjectDetailPage /></PrivateRoute>} />
           <Route path="/projects/:id/traceability" element={<PrivateRoute><TraceabilityPage /></PrivateRoute>} />
