@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 
 from app.database import get_db
 from app.dependencies.auth import get_current_user
@@ -18,7 +18,7 @@ from app.services.events import record_event
 router = APIRouter(prefix="/api/v1/projects", tags=["projects"])
 
 
-def _access_level_for(project_id: int, current_user: User, db: Session) -> str | None:
+def _access_level_for(project_id: int, current_user: User, db: Session) -> Optional[str]:
     if current_user.role == UserRole.admin:
         return AccessLevel.admin.value
     mapping = db.query(UserProjectMapping).filter(

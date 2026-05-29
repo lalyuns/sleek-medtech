@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import api from '../api/client'
+import { getPublicFontStack, getPublicHeadingWeight, getPublicPageBackgroundStyle, usePublicSiteContent } from '../content/publicSiteContent'
 
 const SOURCE_LABELS = {
   self_made: '自製',
@@ -8,7 +10,19 @@ const SOURCE_LABELS = {
   customer_supplied: '客供',
 }
 
+const PRODUCT_TYPE_LABELS = {
+  '3d_product': '3D 產品',
+  image_product: '圖片產品',
+  material: '材料本身',
+  recovery: '術後恢復',
+  fixator: '固定器材料',
+}
+
 export default function ProductCatalogPage() {
+  const content = usePublicSiteContent()
+  const { catalog = {} } = content
+  const publicFontFamily = getPublicFontStack(content.fontFamily)
+  const publicHeadingWeight = getPublicHeadingWeight(content.headingWeight)
   const [products, setProducts] = useState([])
   const [selectedId, setSelectedId] = useState('')
   const [filters, setFilters] = useState({ q: '', body_region: '', clinical_use: '', indication: '' })
@@ -44,6 +58,8 @@ export default function ProductCatalogPage() {
       ...form,
       product_id: selectedId ? Number(selectedId) : null,
       quantity: Number(form.quantity || 1),
+      request_source: 'web',
+      request_type: 'inquiry',
     })
     setSubmitted(true)
     setForm({ requester_name: '', organization: '', email: '', phone: '', quantity: 1, message: '' })
@@ -60,29 +76,39 @@ export default function ProductCatalogPage() {
   const hasActiveFilter = Object.values(filters).some((value) => value.trim())
 
   return (
-    <div className="ops-page">
+    <div
+      className="ops-page public-catalog-page"
+      style={{
+        fontFamily: publicFontFamily,
+        '--public-heading-weight': publicHeadingWeight,
+        ...getPublicPageBackgroundStyle(content, 'catalog')
+      }}
+    >
       <header className="ops-topbar">
         <div className="ops-brand">
           <span className="ops-brand-mark">睿</span>
           <span>睿程生醫 產品型錄</span>
         </div>
         <nav className="ops-nav">
-          <a href="/login">內部登入</a>
+          <Link to="/">首頁</Link>
+          <Link to="/order">直接訂購</Link>
+          <Link to="/login">內部登入</Link>
         </nav>
       </header>
 
       <main className="ops-main catalog-layout">
         <section className="ops-title-row">
-          <h1>可申請產品</h1>
-          <p>外部使用者可查看套組內容並送出需求；正式報價、文件與權限會由內部審核後開通。</p>
+          <h1>{catalog.pageTitle}</h1>
+          <p>{catalog.intro}</p>
+          <Link className="catalog-order-entry" to="/order">{catalog.orderEntryLabel}</Link>
         </section>
 
         <section className="ops-panel catalog-filter-panel">
           <div>
-            <strong>器材查詢</strong>
-            <span>依使用部位、臨床用途或適應症快速找出相關醫材。</span>
+            <strong>{catalog.searchTitle}</strong>
+            <span>{catalog.searchHint}</span>
           </div>
-          <input value={filters.q} onChange={(event) => setCatalogFilter('q', event.target.value)} placeholder="搜尋下顎、重建、術中固定..." />
+          <input value={filters.q} onChange={(event) => setCatalogFilter('q', event.target.value)} placeholder={catalog.searchPlaceholder} />
           <div className="catalog-filter-row">
             {filters.body_region && <button type="button" className="catalog-filter-chip active" onClick={() => setCatalogFilter('body_region', '')}>部位：{filters.body_region}</button>}
             {filters.clinical_use && <button type="button" className="catalog-filter-chip active" onClick={() => setCatalogFilter('clinical_use', '')}>用途：{filters.clinical_use}</button>}
@@ -94,11 +120,11 @@ export default function ProductCatalogPage() {
         <section className="catalog-grid">
           <div className="ops-table-panel">
             <div className="ops-section-heading">
-              <h2>產品與組件</h2>
+              <h2>{catalog.resultsTitle}</h2>
               <span>{products.length} 件結果</span>
             </div>
             <div className="catalog-products">
-              {products.length === 0 && <div className="ops-empty">找不到符合條件的器材。</div>}
+              {products.length === 0 && <div className="ops-empty">{catalog.emptyText}</div>}
               {products.map((product) => (
                 <button
                   key={product.product_id}
@@ -106,9 +132,9 @@ export default function ProductCatalogPage() {
                   onClick={() => setSelectedId(String(product.product_id))}
                 >
                   <strong>{product.name}</strong>
-                  <span>{product.sku}</span>
+                  <span>{PRODUCT_TYPE_LABELS[product.product_type] || '3D 產品'} · {product.sku}</span>
                   {product.body_region && <span>{product.body_region}</span>}
-                  <p>{product.description}</p>
+                  <p>{product.senior_note || product.description}</p>
                 </button>
               ))}
             </div>
@@ -116,15 +142,23 @@ export default function ProductCatalogPage() {
 
           <div className="ops-table-panel">
             <div className="ops-section-heading">
-              <h2>{selectedProduct?.name || '產品內容'}</h2>
+              <h2>{selectedProduct?.name || catalog.selectedFallbackTitle}</h2>
               <span>{selectedProduct?.bom_items?.length || 0} 件組成</span>
             </div>
             {selectedProduct && (
               <div className="ops-context-grid">
+                <div><span>產品類型</span><strong>{PRODUCT_TYPE_LABELS[selectedProduct.product_type] || '3D 產品'}</strong></div>
                 <div><span>使用部位</span><strong>{selectedProduct.body_region || '未設定'}</strong>{selectedProduct.body_region && <button type="button" className="catalog-filter-chip" onClick={() => setCatalogFilter('body_region', selectedProduct.body_region)}>查相同部位</button>}</div>
                 <div><span>臨床用途</span><strong>{selectedProduct.clinical_use || '未設定'}</strong>{selectedProduct.clinical_use && <button type="button" className="catalog-filter-chip" onClick={() => setCatalogFilter('clinical_use', selectedProduct.clinical_use)}>查相似用途</button>}</div>
                 <div><span>使用階段</span><strong>{selectedProduct.surgical_stage || '未設定'}</strong></div>
                 <div><span>適應症</span><strong>{selectedProduct.indication || '未設定'}</strong>{selectedProduct.indication && <button type="button" className="catalog-filter-chip" onClick={() => setCatalogFilter('indication', selectedProduct.indication)}>查相似情境</button>}</div>
+              </div>
+            )}
+            {selectedProduct && (
+              <div className="catalog-selected-summary">
+                {selectedProduct.image_url && <ProductMedia url={selectedProduct.image_url} name={selectedProduct.name} />}
+                <p>{selectedProduct.description}</p>
+                <Link to="/order">{catalog.orderProductLabel}</Link>
               </div>
             )}
             <div className="ops-table-wrap">
@@ -157,24 +191,33 @@ export default function ProductCatalogPage() {
 
         <section className="ops-panel">
           <div className="ops-section-heading inline-heading">
-            <h2>送出需求申請</h2>
-            <span>審核後才會開通系統帳號</span>
+            <h2>{catalog.requestTitle}</h2>
+            <span>{catalog.requestHint}</span>
           </div>
-          {submitted && <div className="catalog-success">已收到申請，內部窗口會確認規格、報價與帳號權限。</div>}
+          {submitted && <div className="catalog-success">{catalog.successMessage}</div>}
           <form className="catalog-request-form" onSubmit={submitRequest}>
             <select value={selectedId} onChange={(event) => setSelectedId(event.target.value)}>
               {products.map((product) => <option key={product.product_id} value={product.product_id}>{product.name}</option>)}
             </select>
             <input required value={form.requester_name} onChange={(event) => setForm((value) => ({ ...value, requester_name: event.target.value }))} placeholder="申請人姓名" />
             <input value={form.organization} onChange={(event) => setForm((value) => ({ ...value, organization: event.target.value }))} placeholder="單位/公司" />
-            <input required type="email" value={form.email} onChange={(event) => setForm((value) => ({ ...value, email: event.target.value }))} placeholder="Email" />
+            <input type="email" value={form.email} onChange={(event) => setForm((value) => ({ ...value, email: event.target.value }))} placeholder="Email（可不填）" />
             <input value={form.phone} onChange={(event) => setForm((value) => ({ ...value, phone: event.target.value }))} placeholder="電話" />
             <input min="1" type="number" value={form.quantity} onChange={(event) => setForm((value) => ({ ...value, quantity: event.target.value }))} placeholder="數量" />
             <textarea value={form.message} onChange={(event) => setForm((value) => ({ ...value, message: event.target.value }))} placeholder="規格、交期或補充說明" />
-            <button className="ops-primary" type="submit">送出申請</button>
+            <button className="ops-primary" type="submit">{catalog.submitLabel}</button>
           </form>
         </section>
       </main>
     </div>
+  )
+}
+
+function ProductMedia({ url, name }) {
+  const isVideo = url.startsWith('data:video') || /\.(mp4|webm|mov|m4v)(\?|$)/i.test(url)
+  return isVideo ? (
+    <video src={url} title={name} autoPlay muted loop playsInline controls />
+  ) : (
+    <img src={url} alt={name} />
   )
 }

@@ -1,6 +1,7 @@
 from minio import Minio
 from app.config import settings
 from datetime import timedelta
+from typing import Optional, Tuple
 from urllib.parse import urlparse
 
 BUCKET = "ruichengbio"
@@ -22,7 +23,7 @@ def public_object_url(object_name: str) -> str:
     return f"{settings.PUBLIC_FILE_BASE_URL.rstrip('/')}/{BUCKET}/{object_name}"
 
 
-def object_name_from_public_url(file_url: str) -> str | None:
+def object_name_from_public_url(file_url: str) -> Optional[str]:
     parsed = urlparse(file_url)
     path = parsed.path.lstrip("/")
     if path.startswith(f"{BUCKET}/"):
@@ -32,7 +33,7 @@ def object_name_from_public_url(file_url: str) -> str | None:
     return None
 
 
-def signed_object_url(file_url: str, minutes: int = 15) -> tuple[str, int | None, str]:
+def signed_object_url(file_url: str, minutes: int = 15) -> Tuple[str, Optional[int], str]:
     if file_url.startswith("/demo/"):
         return file_url, None, "demo"
     object_name = object_name_from_public_url(file_url)

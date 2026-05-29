@@ -14,10 +14,13 @@ from .reference_edge import ReferenceEdge
 from .cost import Cost
 from .audit_log import AuditLog
 from .product import Component, Product, ProductBOMItem, ProductRequest
+from .public_site_content import PublicSiteContent
+from .join_us_application import JoinUsApplication
 
 __all__ = [
     "Base", "User", "Material", "Project", "UserProjectMapping",
     "ProjectMember", "ProjectFile", "Comment", "Event",
     "ModelVersion", "Feedback", "Report", "ReferenceEdge", "Cost", "AuditLog",
     "Product", "Component", "ProductBOMItem", "ProductRequest",
+    "PublicSiteContent", "JoinUsApplication",
 ]

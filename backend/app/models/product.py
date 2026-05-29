@@ -39,6 +39,10 @@ class Product(Base, SoftDeleteMixin):
     clinical_use: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     surgical_stage: Mapped[Optional[str]] = mapped_column(String(160), nullable=True)
     indication: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    product_type: Mapped[str] = mapped_column(String(40), default="3d_product", nullable=False)
+    image_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    senior_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    order_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     status: Mapped[ProductStatus] = mapped_column(SAEnum(ProductStatus), default=ProductStatus.active, nullable=False)
     is_public: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
@@ -83,6 +87,11 @@ class ProductRequest(Base, SoftDeleteMixin):
     phone: Mapped[Optional[str]] = mapped_column(String(60), nullable=True)
     quantity: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    request_source: Mapped[str] = mapped_column(String(40), default="web", nullable=False)
+    request_type: Mapped[str] = mapped_column(String(40), default="order", nullable=False)
+    preferred_contact: Mapped[Optional[str]] = mapped_column(String(80), nullable=True)
+    delivery_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    line_user_id: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
     status: Mapped[ProductRequestStatus] = mapped_column(
         SAEnum(ProductRequestStatus),
         default=ProductRequestStatus.submitted,
