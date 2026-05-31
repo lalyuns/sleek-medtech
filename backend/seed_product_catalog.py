@@ -29,7 +29,21 @@ def upsert_component(db, name, part_number, source_type, unit, supplier_name=Non
     return component
 
 
-def upsert_product(db, name, sku, description, body_region=None, clinical_use=None, surgical_stage=None, indication=None, is_public=True):
+def upsert_product(
+    db,
+    name,
+    sku,
+    description,
+    body_region=None,
+    clinical_use=None,
+    surgical_stage=None,
+    indication=None,
+    product_type="3d_product",
+    image_url=None,
+    senior_note=None,
+    order_enabled=True,
+    is_public=True,
+):
     product = db.query(Product).filter(Product.sku == sku, Product.is_deleted == False).first()
     if not product:
         product = Product(name=name, sku=sku, description=description)
@@ -41,6 +55,10 @@ def upsert_product(db, name, sku, description, body_region=None, clinical_use=No
     product.clinical_use = clinical_use
     product.surgical_stage = surgical_stage
     product.indication = indication
+    product.product_type = product_type
+    product.image_url = image_url
+    product.senior_note = senior_note
+    product.order_enabled = order_enabled
     product.status = ProductStatus.active
     product.is_public = is_public
     product.is_deleted = False
@@ -167,6 +185,10 @@ def seed_product_catalog():
             clinical_use="下顎骨缺損重建與固定",
             surgical_stage="術中固定、術後支撐",
             indication="腫瘤切除、創傷或先天缺損後的下顎骨重建情境。",
+            product_type="3d_product",
+            image_url="/images/model-visualization.png",
+            senior_note="適合先用電話確認需求，由專人協助整理 CT/STL、固定板方向與交期。",
+            order_enabled=True,
         )
         upsert_bom_item(db, mandible_set, plate, 1, "pcs", "由 STL 版本與醫師簽核建立。", 10)
         upsert_bom_item(db, mandible_set, screw, 6, "pcs", "依手術規劃可調整數量，外購批號需追溯。", 20)
@@ -206,6 +228,10 @@ def seed_product_catalog():
             clinical_use="顱骨缺損覆蓋與修補",
             surgical_stage="術中覆蓋固定、術後保護",
             indication="外傷或術後顱骨缺損，需要客製化鈦網貼合與固定的情境。",
+            product_type="image_product",
+            image_url="/images/clinical-application-value.png",
+            senior_note="可先留下電話與預估需求，專人會協助確認適用情境與後續評估方式。",
+            order_enabled=True,
         )
         upsert_bom_item(db, cranial_set, mesh, 1, "pcs", "依版本模型製作。", 10)
         upsert_bom_item(db, cranial_set, screw_small, 8, "pcs", "外購，可依醫師需求調整數量。", 20)
@@ -256,6 +282,10 @@ def seed_product_catalog():
             clinical_use="術前切割定位與鑽孔導引",
             surgical_stage="術前規劃、術中定位",
             indication="需要將 CT 規劃轉換為手術定位與切割路徑的客製化顎面手術情境。",
+            product_type="3d_product",
+            image_url="/images/surgical-guide-support.png",
+            senior_note="若不熟悉規格，可先填寫手術部位與聯絡電話，由專人回覆確認。",
+            order_enabled=True,
         )
         upsert_bom_item(db, surgical_guide_set, guide, 1, "pcs", "由 SG 專案 STL 版本產生導板幾何。", 10)
         upsert_bom_item(db, surgical_guide_set, drill_sleeve, 2, "pcs", "外購導引套，需確認尺寸公差。", 20)

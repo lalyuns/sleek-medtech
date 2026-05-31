@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -173,6 +173,111 @@ def list_project_events(
     db: Session = Depends(get_db),
     _: User = Depends(require_project_access(AccessLevel.read_only)),
 ):
-    return db.query(Event).filter(
+    native_events = db.query(Event).filter(
         Event.project_id == project_id,
     ).order_by(Event.created_at.desc()).all()
+
+    existing_keys = {
+        (event.event_type, event.target_type, event.target_id)
+        for event in native_events
+    }
+    synthetic_events = []
+    synthetic_id = -1
+
+    def add_synthetic_event(
+        *,
+        event_type: str,
+        target_type: str,
+        target_id: int,
+        actor_id: Optional[int],
+        summary: str,
+        created_at: Optional[datetime],
+        payload_json: Optional[dict] = None,
+    ) -> None:
+        nonlocal synthetic_id
+        key = (event_type, target_type, target_id)
+        if key in existing_keys:
+            return
+        synthetic_events.append({
+            "event_id": synthetic_id,
+            "project_id": project_id,
+            "actor_id": actor_id,
+            "event_type": event_type,
+            "target_type": target_type,
+            "target_id": target_id,
+            "summary": summary,
+            "payload_json": payload_json,
+            "created_at": created_at or datetime.utcnow(),
+        })
+        synthetic_id -= 1
+
+    versions = db.query(ModelVersion).filter(
+        ModelVersion.project_id == project_id,
+        ModelVersion.is_deleted == False,
+    ).all()
+    for version in versions:
+        add_synthetic_event(
+            event_type="file.uploaded",
+            target_type="model_version",
+            target_id=version.version_id,
+            actor_id=version.uploader_id,
+            summary=f"上傳 3D 模型 v{version.version_number}",
+            payload_json={
+                "status": version.status.value,
+                "hash_value": version.hash_value,
+                "volume": version.volume,
+            },
+            created_at=version.timestamp,
+        )
+        if version.status == VersionStatus.locked:
+            add_synthetic_event(
+                event_type="file.signed_off",
+                target_type="model_version",
+                target_id=version.version_id,
+                actor_id=version.signed_off_by,
+                summary=f"簽核 3D 模型 v{version.version_number}",
+                payload_json={"reason": version.signoff_reason},
+                created_at=version.signed_off_at or version.timestamp,
+            )
+
+    reports = db.query(Report).filter(
+        Report.project_id == project_id,
+        Report.is_deleted == False,
+    ).all()
+    for report in reports:
+        add_synthetic_event(
+            event_type="report.uploaded",
+            target_type="report",
+            target_id=report.report_id,
+            actor_id=report.uploader_id,
+            summary=f"上傳報告：{report.name}",
+            payload_json={"report_type": report.report_type},
+            created_at=report.created_at,
+        )
+
+    feedback_rows = (
+        db.query(Feedback, ModelVersion)
+        .join(ModelVersion, ModelVersion.version_id == Feedback.target_version_id)
+        .filter(
+            ModelVersion.project_id == project_id,
+            ModelVersion.is_deleted == False,
+            Feedback.is_deleted == False,
+        )
+        .all()
+    )
+    for feedback, version in feedback_rows:
+        add_synthetic_event(
+            event_type="feedback.created",
+            target_type="feedback",
+            target_id=feedback.feedback_id,
+            actor_id=feedback.author_id,
+            summary=f"v{version.version_number} 醫師回饋：{feedback.content}",
+            payload_json={"status": feedback.status.value, "coordinates": feedback.coordinates},
+            created_at=feedback.resolved_at or version.timestamp,
+        )
+
+    return sorted(
+        [*native_events, *synthetic_events],
+        key=lambda event: event.created_at if isinstance(event, Event) else event["created_at"],
+        reverse=True,
+    )

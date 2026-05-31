@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import or_
@@ -99,6 +99,10 @@ def _product_detail(db: Session, product: Product) -> ProductDetailOut:
         clinical_use=product.clinical_use,
         surgical_stage=product.surgical_stage,
         indication=product.indication,
+        product_type=product.product_type,
+        image_url=product.image_url,
+        senior_note=product.senior_note,
+        order_enabled=product.order_enabled,
         status=product.status.value,
         is_public=product.is_public,
         created_at=product.created_at,
@@ -108,10 +112,10 @@ def _product_detail(db: Session, product: Product) -> ProductDetailOut:
 
 @router.get("/catalog/products", response_model=List[PublicProductOut])
 def public_catalog(
-    q: str | None = Query(default=None),
-    body_region: str | None = Query(default=None),
-    clinical_use: str | None = Query(default=None),
-    indication: str | None = Query(default=None),
+    q: Optional[str] = Query(default=None),
+    body_region: Optional[str] = Query(default=None),
+    clinical_use: Optional[str] = Query(default=None),
+    indication: Optional[str] = Query(default=None),
     db: Session = Depends(get_db),
 ):
     query = db.query(Product).filter(
@@ -149,6 +153,10 @@ def public_catalog(
             clinical_use=detail.clinical_use,
             surgical_stage=detail.surgical_stage,
             indication=detail.indication,
+            product_type=detail.product_type,
+            image_url=detail.image_url,
+            senior_note=detail.senior_note,
+            order_enabled=detail.order_enabled,
             bom_items=[
                 PublicComponentOut(
                     name=item.component.name,
@@ -172,11 +180,15 @@ def create_public_request(body: ProductRequestCreate, db: Session = Depends(get_
             Product.product_id == body.product_id,
             Product.status == ProductStatus.active,
             Product.is_public == True,
+            Product.order_enabled == True,
             Product.is_deleted == False,
         ).first()
         if not product:
             raise HTTPException(status_code=404, detail="Product not found")
-    request = ProductRequest(**body.model_dump())
+    payload = body.model_dump()
+    if not payload.get("email"):
+        payload["email"] = "phone-only@order.local"
+    request = ProductRequest(**payload)
     db.add(request)
     db.commit()
     db.refresh(request)
@@ -202,6 +214,10 @@ def create_product(body: ProductCreate, db: Session = Depends(get_db), _: User =
         clinical_use=body.clinical_use,
         surgical_stage=body.surgical_stage,
         indication=body.indication,
+        product_type=body.product_type,
+        image_url=body.image_url,
+        senior_note=body.senior_note,
+        order_enabled=body.order_enabled,
         status=_parse_enum(ProductStatus, body.status, "product status"),
         is_public=body.is_public,
     )
@@ -233,6 +249,14 @@ def update_product(product_id: int, body: ProductUpdate, db: Session = Depends(g
         product.surgical_stage = body.surgical_stage
     if body.indication is not None:
         product.indication = body.indication
+    if body.product_type is not None:
+        product.product_type = body.product_type
+    if body.image_url is not None:
+        product.image_url = body.image_url
+    if body.senior_note is not None:
+        product.senior_note = body.senior_note
+    if body.order_enabled is not None:
+        product.order_enabled = body.order_enabled
     if body.status is not None:
         product.status = _parse_enum(ProductStatus, body.status, "product status")
     if body.is_public is not None:

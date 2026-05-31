@@ -43,7 +43,7 @@ def _entity_context(db: Session, log: AuditLog) -> dict:
         context["actor_name"] = actor.name
         context["actor_email"] = actor.email
 
-    def attach_project(project_id: int | None) -> None:
+    def attach_project(project_id: Optional[int]) -> None:
         if not project_id:
             return
         project = db.query(Project).filter(Project.project_id == project_id).first()

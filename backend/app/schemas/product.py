@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
 
 
 class ComponentCreate(BaseModel):
@@ -31,6 +31,10 @@ class ProductCreate(BaseModel):
     clinical_use: Optional[str] = None
     surgical_stage: Optional[str] = None
     indication: Optional[str] = None
+    product_type: str = "3d_product"
+    image_url: Optional[str] = None
+    senior_note: Optional[str] = None
+    order_enabled: bool = True
     status: str = "active"
     is_public: bool = True
 
@@ -43,6 +47,10 @@ class ProductUpdate(BaseModel):
     clinical_use: Optional[str] = None
     surgical_stage: Optional[str] = None
     indication: Optional[str] = None
+    product_type: Optional[str] = None
+    image_url: Optional[str] = None
+    senior_note: Optional[str] = None
+    order_enabled: Optional[bool] = None
     status: Optional[str] = None
     is_public: Optional[bool] = None
 
@@ -96,6 +104,10 @@ class PublicProductOut(BaseModel):
     clinical_use: Optional[str] = None
     surgical_stage: Optional[str] = None
     indication: Optional[str] = None
+    product_type: str = "3d_product"
+    image_url: Optional[str] = None
+    senior_note: Optional[str] = None
+    order_enabled: bool = True
     bom_items: List[PublicComponentOut] = Field(default_factory=list)
 
 
@@ -103,10 +115,15 @@ class ProductRequestCreate(BaseModel):
     product_id: Optional[int] = None
     requester_name: str
     organization: Optional[str] = None
-    email: EmailStr
+    email: Optional[str] = None
     phone: Optional[str] = None
     quantity: int = Field(default=1, ge=1)
     message: Optional[str] = None
+    request_source: str = "web"
+    request_type: str = "order"
+    preferred_contact: Optional[str] = None
+    delivery_note: Optional[str] = None
+    line_user_id: Optional[str] = None
 
 
 class ProductRequestUpdate(BaseModel):

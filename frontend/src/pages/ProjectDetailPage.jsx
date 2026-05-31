@@ -19,6 +19,7 @@ const TAB_LABELS = {
   Status: '狀態',
   Files: '檔案',
   Comments: '留言與標註',
+  Traceability: '溯源圖',
   Timeline: '時間線',
   Advanced: '進階',
   Members: '成員',
@@ -98,8 +99,9 @@ export default function ProjectDetailPage() {
   const canAdminProject = user?.role === 'admin' || accessLevel === 'admin'
   const canSignOff = user?.role === 'doctor' || user?.role === 'admin'
   const canWriteFeedback = user?.role === 'doctor' || user?.role === 'admin'
+  const canUploadReports = canEditProject || user?.role === 'doctor' || user?.role === 'vendor'
   const tabs = useMemo(() => {
-    const items = ['Status', 'Files', 'Comments', 'Timeline', 'Advanced']
+    const items = ['Status', 'Files', 'Comments', 'Traceability', 'Timeline', 'Advanced']
     if (canAdminProject) items.push('Members')
     return items
   }, [canAdminProject])
@@ -312,7 +314,13 @@ export default function ProjectDetailPage() {
 
       <div className="project-tabs">
         {tabs.map((item) => (
-          <button key={item} onClick={() => setTab(item)} style={selectedTab === item ? activeTabButton : tabButton}>{TAB_LABELS[item] || item}</button>
+          <button
+            key={item}
+            onClick={() => (item === 'Traceability' ? navigate(`/projects/${id}/traceability`) : setTab(item))}
+            style={selectedTab === item ? activeTabButton : tabButton}
+          >
+            {TAB_LABELS[item] || item}
+          </button>
         ))}
       </div>
 
@@ -421,7 +429,7 @@ export default function ProjectDetailPage() {
 
           <div style={panelStyle}>
             <h2 style={panelTitle}>一般文件</h2>
-            <ReportsPanel projectId={id} versionId={activeVersion?.version_id} />
+            <ReportsPanel projectId={id} versionId={activeVersion?.version_id} canUpload={canUploadReports} />
           </div>
         </div>
       )}
@@ -502,7 +510,7 @@ export default function ProjectDetailPage() {
             <div className="advanced-grid">
               <div>
                 <h3 style={subPanelTitle}>報告與證明文件</h3>
-                <ReportsPanel projectId={id} versionId={activeVersion?.version_id} />
+                <ReportsPanel projectId={id} versionId={activeVersion?.version_id} canUpload={canUploadReports} />
               </div>
               <div>
                 <h3 style={subPanelTitle}>稽核紀錄</h3>
