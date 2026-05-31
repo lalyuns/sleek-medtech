@@ -9,16 +9,19 @@ const REPORT_TYPES = [
   ['manufacturing', '製造文件'],
   ['compliance', '合規文件'],
   ['sterilization', '滅菌文件'],
+  ['clinical_review', '臨床審閱'],
+  ['supplier_quote', '供應商報價'],
 ]
 const REQUIRED_TYPES = ['material_test', 'inspection', 'compliance']
 
-export default function ReportsPanel({ projectId, versionId }) {
+export default function ReportsPanel({ projectId, versionId, canUpload = true }) {
   const [reports, setReports] = useState([])
   const [name, setName] = useState('')
   const [reportType, setReportType] = useState('material_test')
   const [filterType, setFilterType] = useState('all')
   const [file, setFile] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [message, setMessage] = useState(null)
   const [preview, setPreview] = useState(null)
 
   const typeLabel = useCallback((value) => REPORT_TYPES.find(([type]) => type === value)?.[1] || value, [])
@@ -50,8 +53,13 @@ export default function ReportsPanel({ projectId, versionId }) {
 
   const submit = async (event) => {
     event.preventDefault()
+    if (!canUpload) {
+      setMessage({ type: 'error', text: '目前帳號沒有上傳報告權限。' })
+      return
+    }
     if (!name.trim() || !file) return
     setSubmitting(true)
+    setMessage({ type: 'info', text: '正在上傳報告...' })
     try {
       const form = new FormData()
       form.append('name', name.trim())
@@ -68,7 +76,11 @@ export default function ReportsPanel({ projectId, versionId }) {
       setFile(null)
       event.target.reset()
       setPreview(report)
+      setMessage({ type: 'success', text: '報告已上傳並寫入專案。' })
       loadReports()
+    } catch (error) {
+      const detail = error.response?.data?.detail
+      setMessage({ type: 'error', text: detail || '上傳報告失敗，請確認權限或稍後再試。' })
     } finally {
       setSubmitting(false)
     }
@@ -93,16 +105,24 @@ export default function ReportsPanel({ projectId, versionId }) {
   return (
     <div className="reports-panel-grid">
       <div>
-        <form onSubmit={submit} style={{ display: 'grid', gap: 8, marginBottom: 14 }}>
-          <input value={name} onChange={(event) => setName(event.target.value)} placeholder="報告名稱" style={fieldStyle} />
-          <select value={reportType} onChange={(event) => setReportType(event.target.value)} style={fieldStyle}>
-            {REPORT_TYPES.filter(([value]) => value !== 'all').map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-          </select>
-          <input type="file" onChange={(event) => setFile(event.target.files?.[0] || null)} style={{ color: '#324156', fontSize: 12 }} />
-          <button disabled={submitting || !name.trim() || !file} style={{ padding: '8px 12px', borderRadius: 6, border: 'none', background: '#3b82f6', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 700, opacity: submitting || !name.trim() || !file ? 0.55 : 1 }}>
-            上傳報告
-          </button>
-        </form>
+        {canUpload ? (
+          <form onSubmit={submit} style={{ display: 'grid', gap: 8, marginBottom: 14 }}>
+            <input value={name} onChange={(event) => setName(event.target.value)} placeholder="報告名稱" style={fieldStyle} />
+            <select value={reportType} onChange={(event) => setReportType(event.target.value)} style={fieldStyle}>
+              {REPORT_TYPES.filter(([value]) => value !== 'all').map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select>
+            <input type="file" onChange={(event) => setFile(event.target.files?.[0] || null)} style={{ color: '#324156', fontSize: 12 }} />
+            <button disabled={submitting || !name.trim() || !file} style={{ padding: '8px 12px', borderRadius: 6, border: 'none', background: '#3b82f6', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 700, opacity: submitting || !name.trim() || !file ? 0.55 : 1 }}>
+              {submitting ? '上傳中...' : '上傳報告'}
+            </button>
+          </form>
+        ) : (
+          <div style={{ ...messageStyle, borderColor: '#cfd9e8', background: '#f8fafc', color: '#66758f' }}>
+            目前帳號可查看與下載報告，若要新增報告請切換到工程師或管理員帳號。
+          </div>
+        )}
+
+        {message && <div style={{ ...messageStyle, ...messageTone(message.type) }}>{message.text}</div>}
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 12 }}>
           <Stat label="報告總數" value={reports.length} />
@@ -207,4 +227,19 @@ const buttonStyle = {
   padding: '5px 9px',
   cursor: 'pointer',
   fontSize: 12,
+}
+
+const messageStyle = {
+  padding: 10,
+  borderRadius: 8,
+  border: '1px solid',
+  fontSize: 12,
+  lineHeight: 1.5,
+  marginBottom: 12,
+}
+
+function messageTone(type) {
+  if (type === 'success') return { borderColor: '#b7efcf', background: '#f0fdf4', color: '#137447' }
+  if (type === 'error') return { borderColor: '#ffc7c7', background: '#fff7f7', color: '#b42318' }
+  return { borderColor: '#bfdbfe', background: '#eff6ff', color: '#2856c8' }
 }

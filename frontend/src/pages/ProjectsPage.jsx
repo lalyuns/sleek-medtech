@@ -54,17 +54,21 @@ export default function ProjectsPage() {
 
   const rows = useMemo(() => projects.map((project) => {
     const versions = projectMeta[project.project_id] || []
-    const latest = versions[versions.length - 1]
+    const sortedVersions = [...versions].sort((a, b) => {
+      const versionDelta = Number(a.version_number || 0) - Number(b.version_number || 0)
+      if (versionDelta !== 0) return versionDelta
+      return new Date(a.timestamp || 0) - new Date(b.timestamp || 0)
+    })
+    const latest = sortedVersions[sortedVersions.length - 1]
     return { project, versions, latest }
   }), [projectMeta, projects])
 
   const dashboard = useMemo(() => {
-    const allVersions = rows.flatMap((row) => row.versions)
     return {
       projectCount: rows.length,
-      pendingCount: allVersions.filter((version) => version.status === 'draft').length,
+      pendingCount: rows.filter((row) => row.latest?.status === 'draft').length,
       activeCount: rows.filter((row) => row.project.status === 'active').length,
-      lockedCount: allVersions.filter((version) => version.status === 'locked').length,
+      lockedCount: rows.filter((row) => row.latest?.status === 'locked').length,
     }
   }, [rows])
 
