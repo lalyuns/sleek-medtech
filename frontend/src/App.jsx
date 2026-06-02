@@ -23,6 +23,7 @@ export default function App() {
     <BrowserRouter>
       <Suspense fallback={<PageLoading />}>
         <Routes>
+          <Route path="/" element={<PlatformHome />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/catalog" element={<ProductCatalogPage />} />
           <Route path="/projects" element={<PrivateRoute><ProjectsPage /></PrivateRoute>} />
@@ -38,6 +39,11 @@ export default function App() {
       </Suspense>
     </BrowserRouter>
   )
+}
+
+function PlatformHome() {
+  const { token } = useAuthStore()
+  return token ? <ProjectsPage /> : <LoginPage />
 }
 
 function PageLoading() {
